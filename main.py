@@ -95,11 +95,13 @@ class GetUpApp:
                     self._timer.on_person_detected()
                     any_present = True
                 else:
-                    self._timer._state = State.IDLE
-                    self._timer._elapsed = 0
+                    if self._timer._state.value != "overlay":
+                        self._timer._state = State.IDLE
+                        self._timer._elapsed = 0
                     any_present = False
             else:
-                self._timer.on_person_absent()
+                if self._timer._state.value == "overlay":
+                    self._timer.on_person_absent()
                 any_present = False
 
             if any_present != self._last_presence:
