@@ -23,7 +23,8 @@
       "Bash(powershell -Command \"\\(Get-Item dist\\\\GetUp.exe\\).Length / 1MB\")",
       "Bash(python -m PyInstaller --onefile --windowed --name GetUp main.py)",
       "Bash(git commit *)",
-      "Bash(timeout 45 python main.py)"
+      "Bash(timeout 45 python main.py)",
+      "Skill(andrej-karpathy-skills:karpathy-guidelines)"
     ]
   }
 }
