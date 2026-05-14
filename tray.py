@@ -25,16 +25,16 @@ class SystemTray:
     def _build_menu(self):
         modes = [
             pystray.MenuItem(
-                "键盘鼠标", lambda: self._set_mode("keyboard_mouse"),
-                radio=True, checked=lambda: self._config.detection_mode == "keyboard_mouse"
+                "键盘鼠标", lambda icon, item: self._set_mode("keyboard_mouse"),
+                radio=True, checked=lambda item: self._config.detection_mode == "keyboard_mouse"
             ),
             pystray.MenuItem(
-                "摄像头", lambda: self._set_mode("camera"),
-                radio=True, checked=lambda: self._config.detection_mode == "camera"
+                "摄像头", lambda icon, item: self._set_mode("camera"),
+                radio=True, checked=lambda item: self._config.detection_mode == "camera"
             ),
             pystray.MenuItem(
-                "同时启用", lambda: self._set_mode("both"),
-                radio=True, checked=lambda: self._config.detection_mode == "both"
+                "同时启用", lambda icon, item: self._set_mode("both"),
+                radio=True, checked=lambda item: self._config.detection_mode == "both"
             ),
         ]
 
