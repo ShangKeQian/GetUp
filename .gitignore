@@ -11,3 +11,4 @@ config.json
 camera_debug/
 *.prototxt
 *.caffemodel
+blaze_face_short_range.tflite
