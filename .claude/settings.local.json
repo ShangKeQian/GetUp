@@ -24,7 +24,9 @@
       "Bash(python -m PyInstaller --onefile --windowed --name GetUp main.py)",
       "Bash(git commit *)",
       "Bash(timeout 45 python main.py)",
-      "Skill(andrej-karpathy-skills:karpathy-guidelines)"
+      "Skill(andrej-karpathy-skills:karpathy-guidelines)",
+      "Bash(cmake .. -G \"Visual Studio 17 2022\" -A x64)",
+      "Bash(cmake --build . --config Release)"
     ]
   }
 }
