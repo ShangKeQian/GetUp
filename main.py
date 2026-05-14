@@ -90,7 +90,7 @@ class GetUpApp:
             if idle_time < 5:
                 self._timer.on_person_detected()
                 any_present = True
-            elif camera_idle < 10:
+            elif camera_idle < 5:
                 self._timer.on_person_detected()
                 any_present = True
             elif time.time() - last_camera_check >= 10:

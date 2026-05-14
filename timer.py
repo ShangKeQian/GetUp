@@ -88,7 +88,6 @@ class TimerEngine:
         elif self._state == State.OVERLAY:
             if not self._overlay_paused:
                 self._break_remaining -= 1
-                print(f"[TIMER] tick at {_time.time():.3f}, break_remaining={self._break_remaining}", flush=True)
                 if self.on_update_countdown:
                     self.on_update_countdown(self._break_remaining)
                 if self._break_remaining <= 0:
