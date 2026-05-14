@@ -28,3 +28,32 @@ def test_is_present_after_timeout():
     det = KeyboardMouseDetector()
     det._last_activity = time.time() - 200
     assert det.is_present(idle_timeout=120) is False
+
+
+import numpy as np
+from unittest.mock import patch, MagicMock
+from detectors.camera import CameraDetector
+
+
+def test_camera_detector_no_camera():
+    det = CameraDetector(camera_index=99)
+    with patch("detectors.camera.cv2.VideoCapture") as mock_cap:
+        mock_instance = MagicMock()
+        mock_instance.isOpened.return_value = False
+        mock_cap.return_value = mock_instance
+        det.start()
+        assert det._running is False
+
+
+def test_camera_frame_diff_detects_change():
+    det = CameraDetector(camera_index=0)
+    frame1 = np.zeros((100, 100), dtype=np.uint8)
+    frame2 = np.full((100, 100), 255, dtype=np.uint8)
+    assert det._frames_differ(frame1, frame2) is True
+
+
+def test_camera_frame_diff_no_change():
+    det = CameraDetector(camera_index=0)
+    frame1 = np.zeros((100, 100), dtype=np.uint8)
+    frame2 = np.zeros((100, 100), dtype=np.uint8)
+    assert det._frames_differ(frame1, frame2) is False
