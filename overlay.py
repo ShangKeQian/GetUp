@@ -10,7 +10,6 @@ class OverlayWindow:
         self._window: Optional[tk.Toplevel] = None
         self._countdown_label: Optional[tk.Label] = None
         self._remaining = break_minutes * 60
-        self.show()
 
     def show(self):
         if self._window is not None:

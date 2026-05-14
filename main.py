@@ -66,8 +66,6 @@ class GetUpApp:
                     self._timer.on_person_detected()
                     any_present = True
                     break
-            if not any_present and self._timer.state == State.TIMING:
-                pass
             self._timer.tick()
             time.sleep(1)
 
