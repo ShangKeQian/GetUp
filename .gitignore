@@ -12,3 +12,5 @@ camera_debug/
 *.prototxt
 *.caffemodel
 blaze_face_short_range.tflite
+debug_frame.jpg
+test_*.jpg
