@@ -28,6 +28,14 @@ class OverlayWindow:
 
         self._window.bind("<Escape>", lambda e: self._on_close())
 
+        # 右上角关闭按钮
+        close_btn = tk.Button(
+            self._window, text="✕", font=("Arial", 16, "bold"),
+            fg="white", bg="#444444", activebackground="#666666",
+            bd=0, padx=8, pady=2, command=self._on_close,
+        )
+        close_btn.place(x=screen_w - 50, y=10)
+
         frame = tk.Frame(self._window, bg="black")
         frame.place(relx=0.5, rely=0.5, anchor="center")
 
@@ -43,7 +51,7 @@ class OverlayWindow:
         self._countdown_label.pack()
 
         tk.Label(
-            frame, text="按 Esc 或点击关闭", font=("Microsoft YaHei", 14),
+            frame, text="按 Esc 或点击右上角 ✕ 关闭", font=("Microsoft YaHei", 14),
             fg="#888888", bg="black"
         ).pack(pady=(30, 0))
 

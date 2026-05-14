@@ -10,14 +10,18 @@ class State(Enum):
 
 
 class TimerEngine:
-    def __init__(self, work_minutes: int = 30, idle_timeout: int = 120):
+    def __init__(self, work_minutes: int = 30, idle_timeout: int = 120, break_minutes: int = 2):
         self._work_seconds = work_minutes * 60
         self._idle_timeout = idle_timeout
+        self._break_seconds = break_minutes * 60
         self._state = State.IDLE
         self._elapsed = 0
+        self._break_remaining = 0
         self._last_activity = 0.0
         self._overlay_paused = False
         self.on_show_overlay: Optional[Callable] = None
+        self.on_update_countdown: Optional[Callable] = None
+        self.on_close_overlay: Optional[Callable] = None
 
     @property
     def state(self) -> State:
@@ -44,6 +48,7 @@ class TimerEngine:
     def on_overlay_dismissed(self):
         self._state = State.TIMING
         self._elapsed = 0
+        self._break_remaining = 0
         self._overlay_paused = False
 
     def tick(self):
@@ -56,11 +61,20 @@ class TimerEngine:
             self._elapsed += 1
             if self._elapsed >= self._work_seconds:
                 self._state = State.OVERLAY
+                self._break_remaining = self._break_seconds
+                self._overlay_paused = False
                 if self.on_show_overlay:
                     self.on_show_overlay()
+                if self.on_update_countdown:
+                    self.on_update_countdown(self._break_remaining)
         elif self._state == State.OVERLAY:
             if not self._overlay_paused:
-                idle_time = time.time() - self._last_activity
-                if idle_time >= self._idle_timeout:
-                    self._state = State.IDLE
+                self._break_remaining -= 1
+                if self.on_update_countdown:
+                    self.on_update_countdown(self._break_remaining)
+                if self._break_remaining <= 0:
+                    if self.on_close_overlay:
+                        self.on_close_overlay()
+                    self._state = State.TIMING
                     self._elapsed = 0
+                    self._break_remaining = 0

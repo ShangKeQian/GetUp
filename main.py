@@ -17,6 +17,7 @@ class GetUpApp:
         self._timer = TimerEngine(
             work_minutes=self._config.work_minutes,
             idle_timeout=self._config.idle_timeout * 60,
+            break_minutes=self._config.break_minutes,
         )
         self._root = tk.Tk()
         self._root.withdraw()
@@ -26,6 +27,8 @@ class GetUpApp:
             on_close=self._on_overlay_close,
         )
         self._timer.on_show_overlay = self._show_overlay
+        self._timer.on_update_countdown = self._update_countdown
+        self._timer.on_close_overlay = self._close_overlay
         self._settings = SettingsDialog(
             self._root,
             self._config,
@@ -62,8 +65,11 @@ class GetUpApp:
         self._timer = TimerEngine(
             work_minutes=self._config.work_minutes,
             idle_timeout=self._config.idle_timeout * 60,
+            break_minutes=self._config.break_minutes,
         )
         self._timer.on_show_overlay = self._show_overlay
+        self._timer.on_update_countdown = self._update_countdown
+        self._timer.on_close_overlay = self._close_overlay
 
     def _tick_loop(self):
         while self._running:
@@ -78,6 +84,12 @@ class GetUpApp:
 
     def _show_overlay(self):
         self._root.after(0, self._overlay.show)
+
+    def _update_countdown(self, seconds):
+        self._root.after(0, self._overlay.update_countdown, seconds)
+
+    def _close_overlay(self):
+        self._root.after(0, self._overlay._on_close)
 
     def _on_overlay_close(self):
         self._timer.on_overlay_dismissed()
