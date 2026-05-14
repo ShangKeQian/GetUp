@@ -84,6 +84,7 @@ class GetUpApp:
         tick_count = 0
         while self._running:
             idle_time = time.time() - last_input_time
+
             if idle_time < 5:
                 self._timer.on_person_detected()
                 any_present = True
@@ -98,7 +99,8 @@ class GetUpApp:
                     self._timer._elapsed = 0
                     any_present = False
             else:
-                any_present = self._timer._state.value == "timing" or self._timer._state.value == "overlay"
+                self._timer.on_person_absent()
+                any_present = False
 
             if any_present != self._last_presence:
                 self._last_presence = any_present

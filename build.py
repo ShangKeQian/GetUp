@@ -15,6 +15,7 @@ def main():
         "--onedir",
         "--windowed",
         "--name", "GetUp",
+        "-y",
         "--add-data", f"blaze_face_short_range.tflite;.",
         "--add-data", f"{mp_path}/tasks/c/libmediapipe.dll;mediapipe/tasks/c/",
         "--add-data", f"{mp_path}/modules;mediapipe/modules/",
