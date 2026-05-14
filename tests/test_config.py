@@ -8,7 +8,6 @@ def test_default_values():
     cfg = Config()
     assert cfg.work_minutes == 30
     assert cfg.break_minutes == 2
-    assert cfg.idle_timeout == 1
     assert cfg.detection_mode == "keyboard_mouse"
     assert cfg.camera_index == 0
 

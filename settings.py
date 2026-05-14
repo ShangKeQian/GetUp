@@ -34,26 +34,20 @@ class SettingsDialog:
         self._break_var = tk.IntVar(value=self._config.break_minutes)
         ttk.Spinbox(frame, from_=1, to=30, textvariable=self._break_var, width=8).grid(row=1, column=1, pady=4)
 
-        # 离开超时
-        ttk.Label(frame, text="离开判定时间（分钟）：").grid(row=2, column=0, sticky="w", pady=4)
-        self._idle_var = tk.IntVar(value=self._config.idle_timeout)
-        ttk.Spinbox(frame, from_=1, to=10, textvariable=self._idle_var, width=8).grid(row=2, column=1, pady=4)
-
         # 摄像头编号
-        ttk.Label(frame, text="摄像头编号：").grid(row=3, column=0, sticky="w", pady=4)
+        ttk.Label(frame, text="摄像头编号：").grid(row=2, column=0, sticky="w", pady=4)
         self._camera_var = tk.IntVar(value=self._config.camera_index)
-        ttk.Spinbox(frame, from_=0, to=9, textvariable=self._camera_var, width=8).grid(row=3, column=1, pady=4)
+        ttk.Spinbox(frame, from_=0, to=9, textvariable=self._camera_var, width=8).grid(row=2, column=1, pady=4)
 
         # 按钮
         btn_frame = ttk.Frame(frame)
-        btn_frame.grid(row=4, column=0, columnspan=2, pady=(15, 0))
+        btn_frame.grid(row=3, column=0, columnspan=2, pady=(15, 0))
         ttk.Button(btn_frame, text="保存", command=self._save).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="取消", command=self._close).pack(side="left", padx=5)
 
     def _save(self):
         self._config.work_minutes = self._work_var.get()
         self._config.break_minutes = self._break_var.get()
-        self._config.idle_timeout = self._idle_var.get()
         self._config.camera_index = self._camera_var.get()
         self._config.save()
         if self._on_save:

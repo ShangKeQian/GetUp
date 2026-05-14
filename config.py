@@ -4,7 +4,6 @@ import os
 DEFAULTS = {
     "work_minutes": 30,
     "break_minutes": 2,
-    "idle_timeout": 1,
     "detection_mode": "keyboard_mouse",
     "camera_index": 0,
 }

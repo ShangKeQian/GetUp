@@ -16,7 +16,7 @@ class GetUpApp:
         self._detectors = []
         self._timer = TimerEngine(
             work_minutes=self._config.work_minutes,
-            idle_timeout=self._config.idle_timeout * 60,
+            idle_timeout=1,
             break_minutes=self._config.break_minutes,
         )
         self._root = tk.Tk()
@@ -64,7 +64,7 @@ class GetUpApp:
         self._detectors = []
         self._timer = TimerEngine(
             work_minutes=self._config.work_minutes,
-            idle_timeout=self._config.idle_timeout * 60,
+            idle_timeout=1,
             break_minutes=self._config.break_minutes,
         )
         self._timer.on_show_overlay = self._show_overlay
@@ -75,7 +75,7 @@ class GetUpApp:
         while self._running:
             any_present = False
             for det in self._detectors:
-                if det.is_present(self._config.idle_timeout * 60):
+                if det.is_present(1):
                     self._timer.on_person_detected()
                     any_present = True
                     break
