@@ -1,0 +1,101 @@
+import sys
+import time
+import threading
+import tkinter as tk
+from config import Config
+from timer import TimerEngine, State
+from detectors import create_detectors
+from overlay import OverlayWindow
+from tray import SystemTray
+
+
+class GetUpApp:
+    def __init__(self):
+        self._config = Config()
+        self._detectors = []
+        self._timer = TimerEngine(
+            work_minutes=self._config.work_minutes,
+            idle_timeout=self._config.idle_timeout * 60,
+        )
+        self._root = tk.Tk()
+        self._root.withdraw()
+        self._overlay = OverlayWindow(
+            self._root,
+            break_minutes=self._config.break_minutes,
+            on_close=self._on_overlay_close,
+        )
+        self._timer.on_show_overlay = self._show_overlay
+        self._tray = SystemTray(
+            self._config,
+            on_start=self._start_detection,
+            on_stop=self._stop_detection,
+            on_quit=self._quit,
+        )
+        self._tick_thread = None
+        self._running = False
+
+    def _start_detection(self, icon=None, item=None):
+        if self._running:
+            return
+        self._running = True
+        self._detectors = create_detectors(
+            self._config.detection_mode,
+            self._config.camera_index,
+        )
+        for det in self._detectors:
+            det.start()
+        self._tick_thread = threading.Thread(target=self._tick_loop, daemon=True)
+        self._tick_thread.start()
+
+    def _stop_detection(self, icon=None, item=None):
+        self._running = False
+        for det in self._detectors:
+            det.stop()
+        self._detectors = []
+        self._timer = TimerEngine(
+            work_minutes=self._config.work_minutes,
+            idle_timeout=self._config.idle_timeout * 60,
+        )
+        self._timer.on_show_overlay = self._show_overlay
+
+    def _tick_loop(self):
+        while self._running:
+            any_present = False
+            for det in self._detectors:
+                if det.is_present(self._config.idle_timeout * 60):
+                    self._timer.on_person_detected()
+                    any_present = True
+                    break
+            if not any_present and self._timer.state == State.TIMING:
+                pass
+            self._timer.tick()
+            time.sleep(1)
+
+    def _show_overlay(self):
+        self._root.after(0, self._overlay.show)
+
+    def _on_overlay_close(self):
+        self._timer.on_overlay_dismissed()
+
+    def _quit(self, icon=None, item=None):
+        self._running = False
+        for det in self._detectors:
+            det.stop()
+        self._root.after(0, self._root.destroy)
+        if self._tray._icon:
+            self._tray._icon.stop()
+
+    def run(self):
+        tray_thread = threading.Thread(target=self._tray.start, daemon=True)
+        tray_thread.start()
+        self._start_detection()
+        self._root.mainloop()
+
+
+def main():
+    app = GetUpApp()
+    app.run()
+
+
+if __name__ == "__main__":
+    main()
