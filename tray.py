@@ -14,11 +14,12 @@ def create_icon_image():
 
 
 class SystemTray:
-    def __init__(self, config: Config, on_start, on_stop, on_quit):
+    def __init__(self, config: Config, on_start, on_stop, on_quit, on_settings=None):
         self._config = config
         self._on_start = on_start
         self._on_stop = on_stop
         self._on_quit = on_quit
+        self._on_settings = on_settings
         self._icon = None
         self._running = False
 
@@ -43,6 +44,7 @@ class SystemTray:
             pystray.MenuItem("停止", self._on_stop),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("检测模式", pystray.Menu(*modes)),
+            pystray.MenuItem("设置", self._on_settings) if self._on_settings else pystray.Menu.SEPARATOR,
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("退出", self._on_quit),
         )

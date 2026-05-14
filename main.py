@@ -6,6 +6,7 @@ from config import Config
 from timer import TimerEngine, State
 from detectors import create_detectors
 from overlay import OverlayWindow
+from settings import SettingsDialog
 from tray import SystemTray
 
 
@@ -25,11 +26,17 @@ class GetUpApp:
             on_close=self._on_overlay_close,
         )
         self._timer.on_show_overlay = self._show_overlay
+        self._settings = SettingsDialog(
+            self._root,
+            self._config,
+            on_save=self._on_settings_saved,
+        )
         self._tray = SystemTray(
             self._config,
             on_start=self._start_detection,
             on_stop=self._stop_detection,
             on_quit=self._quit,
+            on_settings=self._open_settings,
         )
         self._tick_thread = None
         self._running = False
@@ -74,6 +81,14 @@ class GetUpApp:
 
     def _on_overlay_close(self):
         self._timer.on_overlay_dismissed()
+
+    def _open_settings(self, icon=None, item=None):
+        self._root.after(0, self._settings.show)
+
+    def _on_settings_saved(self):
+        if self._running:
+            self._stop_detection()
+            self._start_detection()
 
     def _quit(self, icon=None, item=None):
         self._running = False
