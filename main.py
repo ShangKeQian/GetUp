@@ -83,36 +83,32 @@ class GetUpApp:
 
         tick_count = 0
         last_camera_found_time = 0
+        last_camera_check_time = 0
         while self._running:
-            idle_time = time.time() - last_input_time
-            camera_idle = time.time() - last_camera_found_time
+            now = time.time()
+            idle_time = now - last_input_time
+            camera_idle = now - last_camera_found_time
+
+            person_present = False
 
             if idle_time < 5:
-                self._timer.on_person_detected()
-                any_present = True
+                person_present = True
             elif camera_idle < 5:
-                self._timer.on_person_detected()
-                any_present = True
-            elif time.time() - last_camera_check >= 10:
-                last_camera_check = time.time()
-                face_found = self._camera.check_once()
-                if face_found:
-                    self._timer.on_person_detected()
-                    last_camera_found_time = time.time()
-                    any_present = True
-                else:
-                    if self._timer._state.value != "overlay":
-                        self._timer._state = State.IDLE
-                        self._timer._elapsed = 0
-                    any_present = False
-            else:
-                if self._timer._state.value == "overlay":
-                    self._timer.on_person_absent()
-                any_present = False
+                person_present = True
+            elif now - last_camera_check_time >= 10:
+                last_camera_check_time = now
+                if self._camera.check_once():
+                    person_present = True
+                    last_camera_found_time = now
 
-            if any_present != self._last_presence:
-                self._last_presence = any_present
-                self._tray.update_presence(any_present)
+            if person_present:
+                self._timer.on_person_detected()
+            else:
+                self._timer.on_person_absent()
+
+            if person_present != self._last_presence:
+                self._last_presence = person_present
+                self._tray.update_presence(person_present)
             self._timer.tick()
             time.sleep(1)
 
