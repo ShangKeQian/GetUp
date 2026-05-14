@@ -8,3 +8,6 @@ build/
 *.spec
 !GetUp.spec
 config.json
+camera_debug/
+*.prototxt
+*.caffemodel
