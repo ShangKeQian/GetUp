@@ -5,7 +5,7 @@ DEFAULTS = {
     "work_minutes": 30,
     "break_minutes": 2,
     "detection_mode": "camera",
-    "camera_index": 0,
+    "camera_index": 1,
 }
 
 

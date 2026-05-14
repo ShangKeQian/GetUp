@@ -9,7 +9,7 @@ def test_default_values():
     assert cfg.work_minutes == 30
     assert cfg.break_minutes == 2
     assert cfg.detection_mode == "camera"
-    assert cfg.camera_index == 0
+    assert cfg.camera_index == 1
 
 
 def test_save_and_load():
