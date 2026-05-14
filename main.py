@@ -68,12 +68,11 @@ class GetUpApp:
     def _tick_loop(self):
         import pynput
         last_input_time = time.time()
-        camera_check_done = False
+        last_camera_check = 0
 
         def on_input(*args):
-            nonlocal last_input_time, camera_check_done
+            nonlocal last_input_time
             last_input_time = time.time()
-            camera_check_done = False
 
         mouse_listener = pynput.mouse.Listener(on_move=on_input, on_click=on_input)
         keyboard_listener = pynput.keyboard.Listener(on_press=on_input, on_release=on_input)
@@ -82,22 +81,24 @@ class GetUpApp:
         mouse_listener.start()
         keyboard_listener.start()
 
+        tick_count = 0
         while self._running:
             idle_time = time.time() - last_input_time
             if idle_time < 5:
                 self._timer.on_person_detected()
                 any_present = True
-            elif not camera_check_done:
-                camera_check_done = True
+            elif time.time() - last_camera_check >= 10:
+                last_camera_check = time.time()
                 face_found = self._camera.check_once()
                 if face_found:
                     self._timer.on_person_detected()
                     any_present = True
                 else:
-                    self._timer.on_person_absent()
+                    self._timer._state = State.IDLE
+                    self._timer._elapsed = 0
                     any_present = False
             else:
-                any_present = self._timer._state.value != "idle"
+                any_present = self._timer._state.value == "timing" or self._timer._state.value == "overlay"
 
             if any_present != self._last_presence:
                 self._last_presence = any_present

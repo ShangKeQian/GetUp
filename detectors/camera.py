@@ -1,4 +1,5 @@
 import os
+import time
 import cv2
 import mediapipe as mp
 from mediapipe.tasks import python
@@ -18,6 +19,9 @@ class CameraDetector:
         if not cap.isOpened():
             return False
         try:
+            time.sleep(0.5)
+            for _ in range(3):
+                cap.read()
             ret, frame = cap.read()
             if not ret:
                 return False

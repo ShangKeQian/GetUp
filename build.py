@@ -12,7 +12,7 @@ def main():
 
     cmd = [
         sys.executable, "-m", "PyInstaller",
-        "--onefile",
+        "--onedir",
         "--windowed",
         "--name", "GetUp",
         "--add-data", f"blaze_face_short_range.tflite;.",
@@ -30,9 +30,8 @@ def main():
     result = subprocess.run(cmd)
 
     if result.returncode == 0:
-        exe_path = os.path.join("dist", "GetUp.exe")
-        size_mb = os.path.getsize(exe_path) / (1024 * 1024)
-        print(f"\nBuild successful! Output: {exe_path} ({size_mb:.1f} MB)")
+        dist_dir = os.path.join("dist", "GetUp")
+        print(f"\nBuild successful! Output folder: {dist_dir}")
     else:
         print("\nBuild failed!", file=sys.stderr)
         sys.exit(1)
