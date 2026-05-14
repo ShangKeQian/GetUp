@@ -5,6 +5,7 @@ import tkinter as tk
 from config import Config
 from timer import TimerEngine, State
 from detectors import create_detectors
+from detectors.camera import CameraDetector
 from overlay import OverlayWindow
 from settings import SettingsDialog
 from tray import SystemTray
@@ -49,20 +50,12 @@ class GetUpApp:
         if self._running:
             return
         self._running = True
-        self._detectors = create_detectors(
-            self._config.detection_mode,
-            self._config.camera_index,
-        )
-        for det in self._detectors:
-            det.start()
+        self._camera = CameraDetector(camera_index=self._config.camera_index)
         self._tick_thread = threading.Thread(target=self._tick_loop, daemon=True)
         self._tick_thread.start()
 
     def _stop_detection(self, icon=None, item=None):
         self._running = False
-        for det in self._detectors:
-            det.stop()
-        self._detectors = []
         self._timer = TimerEngine(
             work_minutes=self._config.work_minutes,
             idle_timeout=1,
@@ -73,15 +66,39 @@ class GetUpApp:
         self._timer.on_close_overlay = self._close_overlay
 
     def _tick_loop(self):
+        import pynput
+        last_input_time = time.time()
+        camera_check_done = False
+
+        def on_input(*args):
+            nonlocal last_input_time, camera_check_done
+            last_input_time = time.time()
+            camera_check_done = False
+
+        mouse_listener = pynput.mouse.Listener(on_move=on_input, on_click=on_input)
+        keyboard_listener = pynput.keyboard.Listener(on_press=on_input, on_release=on_input)
+        mouse_listener.daemon = True
+        keyboard_listener.daemon = True
+        mouse_listener.start()
+        keyboard_listener.start()
+
         while self._running:
-            any_present = False
-            for det in self._detectors:
-                if det.is_present(5):
+            idle_time = time.time() - last_input_time
+            if idle_time < 5:
+                self._timer.on_person_detected()
+                any_present = True
+            elif not camera_check_done:
+                camera_check_done = True
+                face_found = self._camera.check_once()
+                if face_found:
                     self._timer.on_person_detected()
                     any_present = True
-                    break
-            if not any_present:
-                self._timer.on_person_absent()
+                else:
+                    self._timer.on_person_absent()
+                    any_present = False
+            else:
+                any_present = self._timer._state.value != "idle"
+
             if any_present != self._last_presence:
                 self._last_presence = any_present
                 self._tray.update_presence(any_present)

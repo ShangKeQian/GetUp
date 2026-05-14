@@ -41,5 +41,5 @@ def test_camera_detector_no_camera():
         mock_instance = MagicMock()
         mock_instance.isOpened.return_value = False
         mock_cap.return_value = mock_instance
-        det.start()
-        assert det._running is False
+        result = det.check_once()
+        assert result is False
