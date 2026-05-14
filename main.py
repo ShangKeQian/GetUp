@@ -43,6 +43,7 @@ class GetUpApp:
         )
         self._tick_thread = None
         self._running = False
+        self._last_presence = None
 
     def _start_detection(self, icon=None, item=None):
         if self._running:
@@ -81,6 +82,9 @@ class GetUpApp:
                     break
             if not any_present:
                 self._timer.on_person_absent()
+            if any_present != self._last_presence:
+                self._last_presence = any_present
+                self._tray.update_presence(any_present)
             self._timer.tick()
             time.sleep(1)
 

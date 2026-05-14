@@ -5,10 +5,14 @@ from PIL import Image, ImageDraw
 from config import Config
 
 
-def create_icon_image():
+def create_icon_image(present: bool = True):
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.ellipse([8, 8, 56, 56], fill="#00CC66", outline="#009944", width=2)
+    if present:
+        fill, outline = "#00CC66", "#009944"
+    else:
+        fill, outline = "#CC3333", "#992222"
+    draw.ellipse([8, 8, 56, 56], fill=fill, outline=outline, width=2)
     draw.text((20, 16), "G", fill="white")
     return img
 
@@ -54,6 +58,10 @@ class SystemTray:
         self._config.save()
         if self._icon:
             self._icon.update_menu()
+
+    def update_presence(self, present: bool):
+        if self._icon:
+            self._icon.icon = create_icon_image(present)
 
     def start(self):
         self._running = True
