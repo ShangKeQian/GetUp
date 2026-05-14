@@ -21,6 +21,7 @@ class TimerEngine:
         self._absence_start = 0.0
         self._is_absent = False
         self._overlay_paused = False
+        self._last_tick_time = 0.0
         self.on_show_overlay: Optional[Callable] = None
         self.on_update_countdown: Optional[Callable] = None
         self.on_close_overlay: Optional[Callable] = None
@@ -67,16 +68,21 @@ class TimerEngine:
         self._overlay_paused = False
 
     def tick(self):
-        import time as _time
+        now = time.time()
+        if self._last_tick_time == 0:
+            self._last_tick_time = now
+        dt = now - self._last_tick_time
+        self._last_tick_time = now
+
         if self._state == State.TIMING:
             if self._is_absent:
-                absence_duration = time.time() - self._absence_start
+                absence_duration = now - self._absence_start
                 if absence_duration >= self._break_seconds:
                     self._state = State.IDLE
                     self._elapsed = 0
                     self._is_absent = False
                     return
-            self._elapsed += 1
+            self._elapsed += dt
             if self._elapsed >= self._work_seconds:
                 self._state = State.OVERLAY
                 self._break_remaining = self._break_seconds
@@ -84,12 +90,12 @@ class TimerEngine:
                 if self.on_show_overlay:
                     self.on_show_overlay()
                 if self.on_update_countdown:
-                    self.on_update_countdown(self._break_remaining)
+                    self.on_update_countdown(int(self._break_remaining))
         elif self._state == State.OVERLAY:
             if not self._overlay_paused:
-                self._break_remaining -= 1
+                self._break_remaining -= dt
                 if self.on_update_countdown:
-                    self.on_update_countdown(self._break_remaining)
+                    self.on_update_countdown(int(self._break_remaining))
                 if self._break_remaining <= 0:
                     if self.on_close_overlay:
                         self.on_close_overlay()
