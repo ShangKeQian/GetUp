@@ -76,7 +76,7 @@ class GetUpApp:
         while self._running:
             any_present = False
             for det in self._detectors:
-                if det.is_present(1):
+                if det.is_present(5):
                     self._timer.on_person_detected()
                     any_present = True
                     break
