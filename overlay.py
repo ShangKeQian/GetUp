@@ -57,6 +57,8 @@ class OverlayWindow:
         self.update_countdown(self._remaining)
 
     def update_countdown(self, seconds: int):
+        import time as _time
+        print(f"[OVERLAY] update_countdown called: seconds={seconds}, time={_time.time():.3f}", flush=True)
         self._remaining = seconds
         if self._countdown_label and self._window:
             minutes = seconds // 60

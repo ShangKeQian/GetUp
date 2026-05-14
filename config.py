@@ -4,7 +4,7 @@ import os
 DEFAULTS = {
     "work_minutes": 30,
     "break_minutes": 2,
-    "detection_mode": "keyboard_mouse",
+    "detection_mode": "camera",
     "camera_index": 0,
 }
 
@@ -12,7 +12,7 @@ DEFAULTS = {
 class Config:
     def __init__(self, path: str | None = None):
         self._path = path or os.path.join(
-            os.path.dirname(__file__), "config.json"
+            os.getcwd(), "config.json"
         )
         self._data = dict(DEFAULTS)
         if os.path.exists(self._path):

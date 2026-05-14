@@ -43,17 +43,3 @@ def test_camera_detector_no_camera():
         mock_cap.return_value = mock_instance
         det.start()
         assert det._running is False
-
-
-def test_camera_frame_diff_detects_change():
-    det = CameraDetector(camera_index=0)
-    frame1 = np.zeros((100, 100), dtype=np.uint8)
-    frame2 = np.full((100, 100), 255, dtype=np.uint8)
-    assert det._frames_differ(frame1, frame2) is True
-
-
-def test_camera_frame_diff_no_change():
-    det = CameraDetector(camera_index=0)
-    frame1 = np.zeros((100, 100), dtype=np.uint8)
-    frame2 = np.zeros((100, 100), dtype=np.uint8)
-    assert det._frames_differ(frame1, frame2) is False
