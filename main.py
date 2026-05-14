@@ -84,6 +84,7 @@ class GetUpApp:
         tick_count = 0
         last_camera_found_time = 0
         last_camera_check_time = 0
+        camera_fail_count = 0
         while self._running:
             now = time.time()
             idle_time = now - last_input_time
@@ -93,13 +94,20 @@ class GetUpApp:
 
             if idle_time < 5:
                 person_present = True
+                camera_fail_count = 0
             elif camera_idle < 5:
                 person_present = True
             elif now - last_camera_check_time >= 5:
                 last_camera_check_time = now
-                if self._camera.check_once():
+                face_found = self._camera.check_once()
+                if face_found:
                     person_present = True
                     last_camera_found_time = now
+                    camera_fail_count = 0
+                else:
+                    camera_fail_count += 1
+                    if camera_fail_count < 3:
+                        person_present = True
 
             if person_present:
                 self._timer.on_person_detected()
