@@ -59,6 +59,7 @@ class SystemTray:
     def update_running(self, running: bool):
         self._running = running
         if self._icon:
+            self._icon.menu = self._build_menu()
             self._icon.update_menu()
 
     def stop(self):
