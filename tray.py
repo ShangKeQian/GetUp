@@ -20,19 +20,18 @@ def create_icon_image(present: bool = True, paused: bool = False):
 
 
 class SystemTray:
-    def __init__(self, config: Config, on_start, on_stop, on_quit, on_settings=None):
+    def __init__(self, config: Config, on_toggle, on_quit, on_settings=None):
         self._config = config
-        self._on_start = on_start
-        self._on_stop = on_stop
+        self._on_toggle = on_toggle
         self._on_quit = on_quit
         self._on_settings = on_settings
         self._icon = None
         self._running = False
 
     def _build_menu(self):
+        label = "暂停" if self._running else "启动"
         return pystray.Menu(
-            pystray.MenuItem("启动", self._on_start, default=True),
-            pystray.MenuItem("停止", self._on_stop),
+            pystray.MenuItem(label, self._on_toggle, default=True),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("设置", self._on_settings) if self._on_settings else pystray.Menu.SEPARATOR,
             pystray.Menu.SEPARATOR,
@@ -56,6 +55,11 @@ class SystemTray:
             self._build_menu(),
         )
         self._icon.run()
+
+    def update_running(self, running: bool):
+        self._running = running
+        if self._icon:
+            self._icon.update_menu()
 
     def stop(self):
         self._running = False

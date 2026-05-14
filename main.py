@@ -14,7 +14,6 @@ from tray import SystemTray
 class GetUpApp:
     def __init__(self):
         self._config = Config()
-        self._detectors = []
         self._timer = TimerEngine(
             work_minutes=self._config.work_minutes,
             idle_timeout=1,
@@ -37,8 +36,7 @@ class GetUpApp:
         )
         self._tray = SystemTray(
             self._config,
-            on_start=self._start_detection,
-            on_stop=self._stop_detection,
+            on_toggle=self._toggle_detection,
             on_quit=self._quit,
             on_settings=self._open_settings,
         )
@@ -46,25 +44,25 @@ class GetUpApp:
         self._running = False
         self._last_presence = None
 
-    def _start_detection(self, icon=None, item=None):
+    def _toggle_detection(self, icon=None, item=None):
         if self._running:
-            return
-        self._running = True
-        self._camera = CameraDetector(camera_index=self._config.camera_index)
-        self._tick_thread = threading.Thread(target=self._tick_loop, daemon=True)
-        self._tick_thread.start()
-
-    def _stop_detection(self, icon=None, item=None):
-        self._running = False
-        self._tray.update_paused()
-        self._timer = TimerEngine(
-            work_minutes=self._config.work_minutes,
-            idle_timeout=1,
-            break_minutes=self._config.break_minutes,
-        )
-        self._timer.on_show_overlay = self._show_overlay
-        self._timer.on_update_countdown = self._update_countdown
-        self._timer.on_close_overlay = self._close_overlay
+            self._running = False
+            self._tray.update_paused()
+            self._timer = TimerEngine(
+                work_minutes=self._config.work_minutes,
+                idle_timeout=1,
+                break_minutes=self._config.break_minutes,
+            )
+            self._timer.on_show_overlay = self._show_overlay
+            self._timer.on_update_countdown = self._update_countdown
+            self._timer.on_close_overlay = self._close_overlay
+        else:
+            self._running = True
+            self._tray.update_presence(True)
+            self._camera = CameraDetector(camera_index=self._config.camera_index)
+            self._tick_thread = threading.Thread(target=self._tick_loop, daemon=True)
+            self._tick_thread.start()
+        self._tray.update_running(self._running)
 
     def _tick_loop(self):
         import pynput
@@ -130,13 +128,11 @@ class GetUpApp:
 
     def _on_settings_saved(self):
         if self._running:
-            self._stop_detection()
-            self._start_detection()
+            self._toggle_detection()
+            self._toggle_detection()
 
     def _quit(self, icon=None, item=None):
         self._running = False
-        for det in self._detectors:
-            det.stop()
         self._root.after(0, self._root.destroy)
         if self._tray._icon:
             self._tray._icon.stop()
@@ -144,7 +140,7 @@ class GetUpApp:
     def run(self):
         tray_thread = threading.Thread(target=self._tray.start, daemon=True)
         tray_thread.start()
-        self._start_detection()
+        self._toggle_detection()
         self._root.mainloop()
 
 
