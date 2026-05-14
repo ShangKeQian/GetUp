@@ -45,6 +45,10 @@ class TimerEngine:
         elif self._state == State.OVERLAY:
             self._overlay_paused = True
 
+    def on_person_absent(self):
+        if self._state == State.OVERLAY:
+            self._overlay_paused = False
+
     def on_overlay_dismissed(self):
         self._state = State.TIMING
         self._elapsed = 0

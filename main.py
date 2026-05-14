@@ -79,6 +79,8 @@ class GetUpApp:
                     self._timer.on_person_detected()
                     any_present = True
                     break
+            if not any_present:
+                self._timer.on_person_absent()
             self._timer.tick()
             time.sleep(1)
 
