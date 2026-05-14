@@ -56,6 +56,7 @@ class GetUpApp:
 
     def _stop_detection(self, icon=None, item=None):
         self._running = False
+        self._tray.update_paused()
         self._timer = TimerEngine(
             work_minutes=self._config.work_minutes,
             idle_timeout=1,
