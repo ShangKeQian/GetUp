@@ -17,8 +17,11 @@ class Config:
         )
         self._data = dict(DEFAULTS)
         if os.path.exists(self._path):
-            with open(self._path, "r", encoding="utf-8") as f:
-                saved = json.load(f)
+            try:
+                with open(self._path, "r", encoding="utf-8") as f:
+                    saved = json.load(f)
+            except (json.JSONDecodeError, ValueError):
+                saved = {}
             for key in DEFAULTS:
                 if key in saved:
                     self._data[key] = saved[key]
@@ -37,6 +40,12 @@ class Config:
         else:
             data = object.__getattribute__(self, "_data")
             if name in DEFAULTS:
+                expected_type = type(DEFAULTS[name])
+                if not isinstance(value, expected_type):
+                    raise TypeError(
+                        f"Attribute '{name}' expects {expected_type.__name__}, "
+                        f"got {type(value).__name__}"
+                    )
                 data[name] = value
             else:
                 raise AttributeError(f"Config has no attribute '{name}'")
