@@ -95,7 +95,7 @@ class GetUpApp:
                 person_present = True
             elif camera_idle < 5:
                 person_present = True
-            elif now - last_camera_check_time >= 10:
+            elif now - last_camera_check_time >= 5:
                 last_camera_check_time = now
                 if self._camera.check_once():
                     person_present = True
