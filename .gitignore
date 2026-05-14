@@ -14,3 +14,5 @@ camera_debug/
 blaze_face_short_range.tflite
 debug_frame.jpg
 test_*.jpg
+GetUp_C/opencv/
+GetUp_C/build/
