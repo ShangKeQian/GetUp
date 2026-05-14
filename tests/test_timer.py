@@ -16,9 +16,10 @@ def test_person_detected_transitions_to_timing():
 
 
 def test_person_left_resets_to_idle():
-    engine = TimerEngine(work_minutes=30, idle_timeout=2)
+    engine = TimerEngine(work_minutes=30, idle_timeout=1, break_minutes=2)
     engine.on_person_detected()
-    engine._last_activity = time.time() - 300
+    engine.on_person_absent()
+    engine._absence_start = time.time() - 300
     engine.tick()
     assert engine.state == State.IDLE
     assert engine.elapsed == 0

@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(python -m pytest tests/test_config.py -v)",
+      "Bash(pip install *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(Test-Path .gitignore)",
+      "Bash(git ls-tree *)",
+      "Bash(Remove-Item *)",
+      "Bash(python -m pytest tests/test_detectors.py -v)",
+      "Bash(python -m pytest tests/test_detectors.py::test_camera_frame_diff_detects_change -v)",
+      "Bash(python -m pytest tests/test_timer.py -v)",
+      "Bash(python -m pytest tests/test_overlay.py -v)",
+      "Bash(timeout 5 python main.py)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(dir main.py)",
+      "Bash(powershell -Command \"\\(Get-Item dist\\\\GetUp.exe\\).Length / 1MB\")"
+    ]
+  }
+}
