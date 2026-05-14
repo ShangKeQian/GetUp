@@ -82,10 +82,15 @@ class GetUpApp:
         keyboard_listener.start()
 
         tick_count = 0
+        last_camera_found_time = 0
         while self._running:
             idle_time = time.time() - last_input_time
+            camera_idle = time.time() - last_camera_found_time
 
             if idle_time < 5:
+                self._timer.on_person_detected()
+                any_present = True
+            elif camera_idle < 10:
                 self._timer.on_person_detected()
                 any_present = True
             elif time.time() - last_camera_check >= 10:
@@ -93,6 +98,7 @@ class GetUpApp:
                 face_found = self._camera.check_once()
                 if face_found:
                     self._timer.on_person_detected()
+                    last_camera_found_time = time.time()
                     any_present = True
                 else:
                     if self._timer._state.value != "overlay":
