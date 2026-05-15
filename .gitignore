@@ -16,3 +16,7 @@ debug_frame.jpg
 test_*.jpg
 GetUp_C/opencv/
 GetUp_C/build/
+GetUp-Rust/opencv/
+GetUp-Rust/target/
+GetUp-Rust/node_modules/
+GetUp-Rust/dist/
