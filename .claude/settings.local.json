@@ -31,7 +31,10 @@
       "Bash(./getup.exe)",
       "Bash(npm run *)",
       "Bash(npm install *)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(taskkill /F /IM getup.exe)",
+      "Bash(Stop-Process *)",
+      "Bash(PATH=__TRACKED_VAR__/.cargo/bin:__TRACKED_VAR__ npm run tauri build)"
     ]
   }
 }
