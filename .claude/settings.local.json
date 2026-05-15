@@ -26,7 +26,12 @@
       "Bash(timeout 45 python main.py)",
       "Skill(andrej-karpathy-skills:karpathy-guidelines)",
       "Bash(cmake .. -G \"Visual Studio 17 2022\" -A x64)",
-      "Bash(cmake --build . --config Release)"
+      "Bash(cmake --build . --config Release)",
+      "WebFetch(domain:github.com)",
+      "Bash(./getup.exe)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(tasklist)"
     ]
   }
 }
