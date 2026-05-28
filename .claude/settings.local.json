@@ -34,7 +34,16 @@
       "Bash(tasklist)",
       "Bash(taskkill /F /IM getup.exe)",
       "Bash(Stop-Process *)",
-      "Bash(PATH=__TRACKED_VAR__/.cargo/bin:__TRACKED_VAR__ npm run tauri build)"
+      "Bash(PATH=__TRACKED_VAR__/.cargo/bin:__TRACKED_VAR__ npm run tauri build)",
+      "Bash(taskkill //F //IM getup.exe)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\ShangKeQian\\\\OneDrive\\\\Desktop\\\\GetUp\\\\GetUp-Final\\\\models\")",
+      "Bash(python -c ' *)",
+      "Bash(Get-Content *)",
+      "Bash(python *)",
+      "PowerShell(Remove-Item *)",
+      "Bash(taskkill /F /IM GetUp.exe)",
+      "Bash(taskkill /F /IM python.exe)"
     ]
-  }
+  },
+  "model": "opus"
 }

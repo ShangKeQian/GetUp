@@ -24,7 +24,9 @@ class TimerEngine:
         self._last_tick_time = 0.0
         self.on_show_overlay: Optional[Callable] = None
         self.on_update_countdown: Optional[Callable] = None
+        self.on_update_work_time: Optional[Callable] = None
         self.on_close_overlay: Optional[Callable] = None
+        self.on_reset_work_time: Optional[Callable] = None
 
     @property
     def state(self) -> State:
@@ -40,35 +42,45 @@ class TimerEngine:
         seconds = int(self._elapsed) % 60
         return f"{minutes:02d}:{seconds:02d}"
 
+    @property
+    def remaining_seconds(self) -> int:
+        return max(0, int(self._work_seconds - self._elapsed))
+
     def on_person_detected(self):
-        self._last_activity = time.time()
+        self._last_activity = time.monotonic()
         if self._is_absent:
             self._is_absent = False
-            absence_duration = time.time() - self._absence_start
+            absence_duration = time.monotonic() - self._absence_start
             if self._state == State.TIMING and absence_duration >= self._break_seconds:
                 self._state = State.IDLE
                 self._elapsed = 0
+                if self.on_reset_work_time:
+                    self.on_reset_work_time()
         if self._state == State.IDLE:
             self._state = State.TIMING
             self._elapsed = 1
+            if self.on_reset_work_time:
+                self.on_reset_work_time()
         elif self._state == State.OVERLAY:
             self._overlay_paused = True
 
     def on_person_absent(self):
         if not self._is_absent and self._state == State.TIMING:
             self._is_absent = True
-            self._absence_start = time.time()
+            self._absence_start = time.monotonic()
         if self._state == State.OVERLAY:
             self._overlay_paused = False
 
     def on_overlay_dismissed(self):
+        if self._state != State.OVERLAY:
+            return
         self._state = State.TIMING
         self._elapsed = 0
         self._break_remaining = 0
         self._overlay_paused = False
 
     def tick(self):
-        now = time.time()
+        now = time.monotonic()
         if self._last_tick_time == 0:
             self._last_tick_time = now
         dt = now - self._last_tick_time
@@ -81,8 +93,13 @@ class TimerEngine:
                     self._state = State.IDLE
                     self._elapsed = 0
                     self._is_absent = False
+                    if self.on_reset_work_time:
+                        self.on_reset_work_time()
                     return
-            self._elapsed += dt
+            else:
+                self._elapsed += dt
+                if self.on_update_work_time:
+                    self.on_update_work_time(int(self._elapsed))
             if self._elapsed >= self._work_seconds:
                 self._state = State.OVERLAY
                 self._break_remaining = self._break_seconds

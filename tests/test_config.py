@@ -8,8 +8,7 @@ def test_default_values():
     cfg = Config()
     assert cfg.work_minutes == 30
     assert cfg.break_minutes == 2
-    assert cfg.detection_mode == "camera"
-    assert cfg.camera_index == 1
+    assert cfg.camera_index == 0
 
 
 def test_save_and_load():
@@ -53,4 +52,3 @@ def test_corrupt_file_uses_defaults():
             f.write("{{{this is not json!!!")
         cfg = Config(path)
         assert cfg.work_minutes == 30
-        assert cfg.detection_mode == "camera"

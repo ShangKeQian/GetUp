@@ -1,18 +1,46 @@
 import json
 import os
+import sys
+import winreg
+
+APP_NAME = "GetUp"
+REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 DEFAULTS = {
     "work_minutes": 30,
     "break_minutes": 2,
-    "detection_mode": "camera",
-    "camera_index": 1,
+    "camera_index": 0,
+    "startup_enabled": False,
+    "sleep_timeout_minutes": 15,
 }
+
+
+def _get_exe_path():
+    if getattr(sys, "frozen", False):
+        return f'"{sys.executable}"'
+    return f'"{sys.executable}" "{os.path.abspath(sys.argv[0])}"'
+
+
+def set_startup(enabled: bool):
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_SET_VALUE)
+        if enabled:
+            winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, _get_exe_path())
+        else:
+            try:
+                winreg.DeleteValue(key, APP_NAME)
+            except FileNotFoundError:
+                pass
+        winreg.CloseKey(key)
+        return True
+    except OSError:
+        return False
 
 
 class Config:
     def __init__(self, path: str | None = None):
         self._path = path or os.path.join(
-            os.getcwd(), "config.json"
+            os.path.dirname(os.path.abspath(sys.argv[0])), "config.json"
         )
         self._data = dict(DEFAULTS)
         if os.path.exists(self._path):

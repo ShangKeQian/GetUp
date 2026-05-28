@@ -5,10 +5,12 @@ from PIL import Image, ImageDraw
 from config import Config
 
 
-def create_icon_image(present: bool = True, paused: bool = False):
+def create_icon_image(present: bool = True, paused: bool = False, sleeping: bool = False):
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    if paused:
+    if sleeping:
+        fill, outline = "#5AC8FA", "#0099CC"
+    elif paused:
         fill, outline = "#FFCC00", "#CC9900"
     elif present:
         fill, outline = "#00CC66", "#009944"
@@ -20,20 +22,21 @@ def create_icon_image(present: bool = True, paused: bool = False):
 
 
 class SystemTray:
-    def __init__(self, config: Config, on_toggle, on_quit, on_settings=None):
+    def __init__(self, config: Config, on_toggle, on_quit, on_settings=None, on_double_click=None):
         self._config = config
         self._on_toggle = on_toggle
         self._on_quit = on_quit
         self._on_settings = on_settings
+        self._on_double_click_callback = on_double_click
         self._icon = None
         self._running = False
 
     def _build_menu(self):
         label = "暂停" if self._running else "启动"
         return pystray.Menu(
-            pystray.MenuItem(label, self._on_toggle, default=True),
+            pystray.MenuItem(label, self._on_toggle),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("设置", self._on_settings) if self._on_settings else pystray.Menu.SEPARATOR,
+            pystray.MenuItem("设置", self._on_settings, default=True) if self._on_settings else pystray.Menu.SEPARATOR,
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("退出", self._on_quit),
         )
@@ -45,6 +48,10 @@ class SystemTray:
     def update_paused(self):
         if self._icon:
             self._icon.icon = create_icon_image(paused=True)
+
+    def update_sleeping(self, sleeping: bool):
+        if self._icon:
+            self._icon.icon = create_icon_image(sleeping=sleeping)
 
     def start(self):
         self._running = True
