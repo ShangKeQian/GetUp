@@ -22,14 +22,15 @@ def create_icon_image(present: bool = True, paused: bool = False, sleeping: bool
 
 
 class SystemTray:
-    def __init__(self, config: Config, on_toggle, on_quit, on_settings=None, on_double_click=None):
+    def __init__(self, config: Config, on_toggle, on_quit, on_settings=None):
         self._config = config
         self._on_toggle = on_toggle
         self._on_quit = on_quit
         self._on_settings = on_settings
-        self._on_double_click_callback = on_double_click
         self._icon = None
         self._running = False
+        self._present = True
+        self._sleeping = False
 
     def _build_menu(self):
         label = "暂停" if self._running else "启动"
@@ -41,17 +42,26 @@ class SystemTray:
             pystray.MenuItem("退出", self._on_quit),
         )
 
-    def update_presence(self, present: bool):
+    def _update_icon(self):
         if self._icon:
-            self._icon.icon = create_icon_image(present)
+            self._icon.icon = create_icon_image(
+                present=self._present,
+                paused=not self._running,
+                sleeping=self._sleeping,
+            )
+
+    def update_presence(self, present: bool):
+        self._present = present
+        self._update_icon()
 
     def update_paused(self):
-        if self._icon:
-            self._icon.icon = create_icon_image(paused=True)
+        self._present = True
+        self._sleeping = False
+        self._update_icon()
 
     def update_sleeping(self, sleeping: bool):
-        if self._icon:
-            self._icon.icon = create_icon_image(sleeping=sleeping)
+        self._sleeping = sleeping
+        self._update_icon()
 
     def start(self):
         self._running = True
@@ -68,6 +78,7 @@ class SystemTray:
         if self._icon:
             self._icon.menu = self._build_menu()
             self._icon.update_menu()
+        self._update_icon()
 
     def stop(self):
         self._running = False

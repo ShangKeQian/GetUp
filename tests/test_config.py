@@ -52,3 +52,28 @@ def test_corrupt_file_uses_defaults():
             f.write("{{{this is not json!!!")
         cfg = Config(path)
         assert cfg.work_minutes == 30
+
+
+def test_set_startup_closes_key_on_exception():
+    from unittest.mock import patch, MagicMock
+    import config as config_module
+
+    mock_key = MagicMock()
+    mock_key.__enter__ = MagicMock(return_value=mock_key)
+    mock_key.__exit__ = MagicMock(return_value=False)
+
+    with patch("config.winreg.OpenKey", return_value=mock_key), \
+         patch("config.winreg.SetValueEx", side_effect=OSError("test error")):
+        result = config_module.set_startup(True)
+        assert result is False
+        mock_key.__exit__.assert_called_once()
+
+
+def test_corrupt_config_values_use_defaults():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = os.path.join(tmpdir, "config.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"work_minutes": "not_a_number", "break_minutes": 5}, f)
+        cfg = Config(path)
+        assert cfg.work_minutes == 30
+        assert cfg.break_minutes == 5

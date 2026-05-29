@@ -23,15 +23,14 @@ def _get_exe_path():
 
 def set_startup(enabled: bool):
     try:
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_SET_VALUE)
-        if enabled:
-            winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, _get_exe_path())
-        else:
-            try:
-                winreg.DeleteValue(key, APP_NAME)
-            except FileNotFoundError:
-                pass
-        winreg.CloseKey(key)
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, REG_PATH, 0, winreg.KEY_SET_VALUE) as key:
+            if enabled:
+                winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, _get_exe_path())
+            else:
+                try:
+                    winreg.DeleteValue(key, APP_NAME)
+                except FileNotFoundError:
+                    pass
         return True
     except OSError:
         return False
@@ -51,7 +50,8 @@ class Config:
                 saved = {}
             for key in DEFAULTS:
                 if key in saved:
-                    self._data[key] = saved[key]
+                    if isinstance(saved[key], type(DEFAULTS[key])):
+                        self._data[key] = saved[key]
 
     def __getattr__(self, name: str):
         if name.startswith("_"):

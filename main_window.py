@@ -1,3 +1,4 @@
+import threading
 import tkinter as tk
 from tkinter import ttk
 from typing import Optional, Callable
@@ -107,12 +108,24 @@ class MainWindow:
         self._cameras_cached = False
 
     def _cache_cameras(self):
-        if not self._cameras_cached:
-            self._cameras = enumerate_cameras()
-            self._camera_names = [c["name"] for c in self._cameras]
-            if not self._camera_names:
-                self._camera_names = ["未检测到摄像头"]
-            self._cameras_cached = True
+        if self._cameras_cached:
+            return
+        self._camera_names = ["检测中..."]
+        self._cameras_cached = True
+
+        def _scan():
+            cameras = enumerate_cameras()
+            names = [c["name"] for c in cameras] or ["未检测到摄像头"]
+            self._root.after(0, self._on_cameras_scanned, cameras, names)
+
+        threading.Thread(target=_scan, daemon=True).start()
+
+    def _on_cameras_scanned(self, cameras, names):
+        self._cameras = cameras
+        self._camera_names = names
+        if hasattr(self, '_camera_combo') and self._camera_combo is not None:
+            self._camera_combo['values'] = names
+            self._select_current_camera()
 
     def show(self):
         if self._window is not None:
@@ -121,6 +134,10 @@ class MainWindow:
                 self._window.focus_force()
                 return
             except Exception:
+                try:
+                    self._window.destroy()
+                except Exception:
+                    pass
                 self._window = None
 
         self._cache_cameras()
@@ -302,13 +319,14 @@ class MainWindow:
             arrowsize=12
         )
 
-        camera_combo = ttk.Combobox(
+        self._camera_combo = ttk.Combobox(
             row, textvariable=self._camera_var,
             values=self._camera_names, state="readonly",
             width=20, style="Camera.TCombobox", font=("SF Pro Text", 13)
         )
-        camera_combo.pack(side="right")
-        self._select_current_camera()
+        self._camera_combo.pack(side="right")
+        if self._cameras:
+            self._select_current_camera()
 
     def _select_current_camera(self):
         for i, cam in enumerate(self._cameras):
@@ -389,8 +407,10 @@ class MainWindow:
         if self._window:
             self._window.destroy()
         self._window = None
+        self._camera_combo = None
 
     def close(self):
         if self._window:
             self._window.destroy()
-            self._window = None
+        self._window = None
+        self._camera_combo = None

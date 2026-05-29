@@ -17,9 +17,9 @@ class GetUpApp:
         self._config = Config()
         self._timer = TimerEngine(
             work_minutes=self._config.work_minutes,
-            idle_timeout=1,
             break_minutes=self._config.break_minutes,
         )
+        self._camera = CameraDetector(camera_index=self._config.camera_index)
         self._root = tk.Tk()
         self._root.withdraw()
         self._overlay = OverlayWindow(
@@ -27,11 +27,7 @@ class GetUpApp:
             break_minutes=self._config.break_minutes,
             on_close=self._on_overlay_close,
         )
-        self._timer.on_show_overlay = self._show_overlay
-        self._timer.on_update_countdown = self._update_countdown
-        self._timer.on_update_work_time = self._update_work_time
-        self._timer.on_close_overlay = self._close_overlay
-        self._timer.on_reset_work_time = self._reset_work_time
+        self._bind_timer_callbacks()
         self._main_window = MainWindow(
             self._root,
             self._config,
@@ -42,9 +38,9 @@ class GetUpApp:
             on_toggle=self._toggle_detection,
             on_quit=self._quit,
             on_settings=self._open_main_window,
-            on_double_click=self._open_main_window,
         )
         self._tick_thread = None
+        self._lock = threading.Lock()
         self._running = False
         self._last_presence = None
         self._last_sleeping = False
@@ -52,29 +48,23 @@ class GetUpApp:
         self._idle_start_time = None
 
     def _toggle_detection(self, icon=None, item=None):
-        if self._running:
-            self._running = False
-            self._tray.update_paused()
-            if hasattr(self, '_camera'):
-                self._camera.stop()
-            self._timer = TimerEngine(
-                work_minutes=self._config.work_minutes,
-                idle_timeout=1,
-                break_minutes=self._config.break_minutes,
-            )
-            self._timer.on_show_overlay = self._show_overlay
-            self._timer.on_update_countdown = self._update_countdown
-            self._timer.on_update_work_time = self._update_work_time
-            self._timer.on_close_overlay = self._close_overlay
-            self._timer.on_reset_work_time = self._reset_work_time
-        else:
-            self._running = True
-            self._tray.update_presence(True)
-            self._camera = CameraDetector(camera_index=self._config.camera_index)
-            self._camera.start()
-            self._tick_thread = threading.Thread(target=self._tick_loop, daemon=True)
-            self._tick_thread.start()
-        self._tray.update_running(self._running)
+        with self._lock:
+            if self._running:
+                self._running = False
+                if self._tick_thread:
+                    self._tick_thread.join(timeout=3)
+                self._tray.update_paused()
+                self._timer = TimerEngine(
+                    work_minutes=self._config.work_minutes,
+                    break_minutes=self._config.break_minutes,
+                )
+                self._bind_timer_callbacks()
+            else:
+                self._running = True
+                self._tray.update_presence(True)
+                self._tick_thread = threading.Thread(target=self._tick_loop, daemon=True)
+                self._tick_thread.start()
+            self._tray.update_running(self._running)
 
     def _tick_loop(self):
         last_input_time = time.time()
@@ -90,7 +80,8 @@ class GetUpApp:
         mouse_listener.start()
         keyboard_listener.start()
 
-        last_camera_found_time = 0
+        now = time.time()
+        last_camera_found_time = now
         last_camera_check_time = 0
         try:
             while self._running:
@@ -99,14 +90,10 @@ class GetUpApp:
                     idle_time = now - last_input_time
                     person_present = False
 
-                    # 休眠时只检测键鼠，跳过摄像头
                     if self._sleeping:
                         if idle_time < 5:
-                            # 检测到输入 → 唤醒
                             self._sleeping = False
                             self._idle_start_time = None
-                            self._camera = CameraDetector(camera_index=self._config.camera_index)
-                            self._camera.start()
                             person_present = True
                             last_camera_found_time = now
                             last_camera_check_time = now
@@ -120,42 +107,51 @@ class GetUpApp:
                         elif now - last_camera_check_time >= 5:
                             last_camera_check_time = now
                             try:
-                                if self._camera.check_once():
+                                result = self._camera.check_once()
+                                if result is True:
                                     person_present = True
                                     last_camera_found_time = now
-                                else:
+                                elif result is False:
                                     last_camera_found_time = 0
+                                # None = 检测失败，person_present 保持 False
                             except Exception:
                                 traceback.print_exc()
-                                last_camera_check_time = now
 
                     if person_present:
                         self._timer.on_person_detected()
                         self._idle_start_time = None
                     else:
                         self._timer.on_person_absent()
-                        # 追踪空闲时间以触发休眠
-                        if self._timer.state == State.IDLE:
-                            if self._idle_start_time is None:
-                                self._idle_start_time = now
-                            elif now - self._idle_start_time >= self._config.sleep_timeout_minutes * 60:
-                                self._sleeping = True
-                                self._idle_start_time = None
-                                if hasattr(self, '_camera'):
-                                    self._camera.stop()
+
+                    self._timer.tick()
+
+                    if not person_present and self._timer.state == State.IDLE:
+                        if self._idle_start_time is None:
+                            self._idle_start_time = now
+                        elif now - self._idle_start_time >= self._config.sleep_timeout_minutes * 60:
+                            self._sleeping = True
+                            self._idle_start_time = None
+                            self._camera.release()
 
                     if person_present != self._last_presence or self._sleeping != self._last_sleeping:
                         self._last_presence = person_present
                         self._last_sleeping = self._sleeping
                         self._tray.update_sleeping(self._sleeping)
                         self._update_main_window_status()
-                    self._timer.tick()
                 except Exception:
                     traceback.print_exc()
                 time.sleep(1)
         finally:
             mouse_listener.stop()
             keyboard_listener.stop()
+            self._camera.release()
+
+    def _bind_timer_callbacks(self):
+        self._timer.on_show_overlay = self._show_overlay
+        self._timer.on_update_countdown = self._update_countdown
+        self._timer.on_update_work_time = self._update_work_time
+        self._timer.on_close_overlay = self._close_overlay
+        self._timer.on_reset_work_time = self._reset_work_time
 
     def _show_overlay(self):
         self._root.after(0, self._overlay.show)
@@ -170,7 +166,7 @@ class GetUpApp:
         self._root.after(0, self._main_window.reset_countdown)
 
     def _close_overlay(self):
-        self._root.after(0, self._overlay._on_close)
+        self._root.after(0, self._overlay.destroy)
 
     def _on_overlay_close(self):
         self._timer.on_overlay_dismissed()
@@ -184,7 +180,7 @@ class GetUpApp:
             status = "有人"
         else:
             status = "无人"
-        self._main_window.update_status(status)
+        self._root.after(0, self._main_window.update_status, status)
 
     def _open_main_window(self, icon=None, item=None):
         def _show_and_sync():
@@ -193,19 +189,37 @@ class GetUpApp:
             self._update_main_window_status()
         self._root.after(0, _show_and_sync)
 
+    def _restart_detection(self):
+        with self._lock:
+            was_running = self._running
+            if was_running:
+                self._running = False
+                if self._tick_thread:
+                    self._tick_thread.join(timeout=3)
+            self._timer = TimerEngine(
+                work_minutes=self._config.work_minutes,
+                break_minutes=self._config.break_minutes,
+            )
+            self._bind_timer_callbacks()
+            if was_running:
+                self._running = True
+                self._tray.update_presence(True)
+                self._tick_thread = threading.Thread(target=self._tick_loop, daemon=True)
+                self._tick_thread.start()
+            self._tray.update_running(self._running)
+            self._update_main_window_status()
+
     def _on_settings_saved(self):
-        if self._running:
-            self._toggle_detection()
-            self._toggle_detection()
-        self._update_main_window_status()
+        self._restart_detection()
 
     def _quit(self, icon=None, item=None):
-        self._running = False
-        if hasattr(self, '_camera'):
-            self._camera.stop()
+        with self._lock:
+            self._running = False
+            if self._tick_thread:
+                self._tick_thread.join(timeout=3)
+        self._camera.close()
         self._root.after(0, self._root.destroy)
-        if self._tray._icon:
-            self._tray._icon.stop()
+        self._tray.stop()
 
     def run(self):
         tray_thread = threading.Thread(target=self._tray.start, daemon=True)

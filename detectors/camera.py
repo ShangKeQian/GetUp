@@ -1,7 +1,6 @@
 import os
-import time
-import threading
-import traceback
+from typing import Optional
+
 import cv2
 import mediapipe as mp
 from mediapipe.tasks import python
@@ -12,73 +11,46 @@ class CameraDetector:
     def __init__(self, camera_index: int = 0):
         self._camera_index = camera_index
         self._cap = None
-        self._frame = None
-        self._ret = False
-        self._running = False
-        self._lock = threading.Lock()
-        self._thread = None
+        self._face_detector = None
+        self._init_face_detector()
 
-        # 初始化 MediaPipe
-        model_path = os.path.join(os.path.dirname(__file__), '..', 'blaze_face_short_range.tflite')
-        base_options = python.BaseOptions(model_asset_path=model_path)
-        options = vision.FaceDetectorOptions(base_options=base_options)
-        self._face_detector = vision.FaceDetector.create_from_options(options)
+    def _init_face_detector(self):
+        if self._face_detector is None:
+            model_path = os.path.join(os.path.dirname(__file__), '..', 'blaze_face_short_range.tflite')
+            base_options = python.BaseOptions(model_asset_path=model_path)
+            options = vision.FaceDetectorOptions(base_options=base_options)
+            self._face_detector = vision.FaceDetector.create_from_options(options)
 
-    def start(self):
-        """启动后台摄像头线程"""
-        if self._running:
-            return
-
-        # 指定 DSHOW 加速，锁死单帧缓冲
+    def _ensure_open(self) -> bool:
+        self._init_face_detector()
+        if self._cap is not None and self._cap.isOpened():
+            return True
+        if self._cap is not None:
+            self._cap.release()
         self._cap = cv2.VideoCapture(self._camera_index, cv2.CAP_DSHOW)
         self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+        self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+        return self._cap.isOpened()
 
-        # 读取首帧
-        self._ret, self._frame = self._cap.read()
+    def check_once(self) -> Optional[bool]:
+        if not self._ensure_open():
+            return None
+        ret, frame = self._cap.read()
+        if not ret or frame is None:
+            return None
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        result = self._face_detector.detect(mp_image)
+        return len(result.detections) > 0
 
-        self._running = True
-        self._thread = threading.Thread(target=self._update, daemon=True)
-        self._thread.start()
-
-    def _update(self):
-        """后台线程：持续抓图"""
-        while self._running:
-            try:
-                ret, frame = self._cap.read()
-                if ret:
-                    with self._lock:
-                        self._ret = ret
-                        self._frame = frame
-            except Exception:
-                traceback.print_exc()
-            time.sleep(0.1)
-        if self._cap:
+    def release(self):
+        if self._cap is not None:
             self._cap.release()
             self._cap = None
 
-    def check_once(self) -> bool:
-        """从内存获取最新帧并检测"""
-        if not self._running:
-            return False
-
-        with self._lock:
-            if self._frame is None:
-                return False
-            frame = self._frame.copy()
-
-        try:
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-            result = self._face_detector.detect(mp_image)
-            return len(result.detections) > 0
-        except Exception:
-            traceback.print_exc()
-            return False
-
-    def stop(self):
-        """停止后台线程（线程内部会释放摄像头）"""
-        self._running = False
-        if self._thread:
-            self._thread.join(timeout=2)
+    def close(self):
+        self.release()
+        if self._face_detector is not None:
+            self._face_detector.close()
+            self._face_detector = None

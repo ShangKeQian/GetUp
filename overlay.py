@@ -28,7 +28,6 @@ class OverlayWindow:
         overlay_y = (screen_h - overlay_h) // 2
         self._window.geometry(f"{screen_w}x{overlay_h}+0+{overlay_y}")
 
-        # 右上角关闭按钮
         close_btn = tk.Button(
             self._window, text="✕", font=("Arial", 16, "bold"),
             fg="white", bg="#444444", activebackground="#666666",
@@ -59,21 +58,19 @@ class OverlayWindow:
         self.update_countdown(self._remaining)
 
     def update_countdown(self, seconds: int):
-        self._remaining = seconds
+        self._remaining = max(0, seconds)
         if self._countdown_label and self._window:
-            minutes = seconds // 60
-            secs = seconds % 60
+            minutes = self._remaining // 60
+            secs = self._remaining % 60
             self._countdown_label.config(text=f"{minutes:02d}:{secs:02d}")
 
     def _on_close(self):
-        if self._window:
-            self._window.destroy()
-            self._window = None
-            self._countdown_label = None
-        if self._on_close_callback:
-            self._on_close_callback()
+        self.destroy()
 
     def destroy(self):
         if self._window:
             self._window.destroy()
             self._window = None
+            self._countdown_label = None
+            if self._on_close_callback:
+                self._on_close_callback()

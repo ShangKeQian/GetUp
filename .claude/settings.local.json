@@ -42,7 +42,8 @@
       "Bash(python *)",
       "PowerShell(Remove-Item *)",
       "Bash(taskkill /F /IM GetUp.exe)",
-      "Bash(taskkill /F /IM python.exe)"
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(git checkout *)"
     ]
   },
   "model": "opus"
