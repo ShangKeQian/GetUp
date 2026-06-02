@@ -109,7 +109,8 @@ class TimerEngine:
                 else:
                     self._elapsed += dt
                     if self.on_update_work_time:
-                        callbacks.append(lambda: self.on_update_work_time(int(self._elapsed)))
+                        elapsed_now = int(self._elapsed)
+                        callbacks.append(lambda e=elapsed_now: self.on_update_work_time(e))
                 if self._state == State.TIMING and self._elapsed >= self._work_seconds:
                     self._state = State.OVERLAY
                     self._break_remaining = self._break_seconds
@@ -117,12 +118,14 @@ class TimerEngine:
                     if self.on_show_overlay:
                         callbacks.append(self.on_show_overlay)
                     if self.on_update_countdown:
-                        callbacks.append(lambda: self.on_update_countdown(int(self._break_remaining)))
+                        remaining_now = int(self._break_remaining)
+                        callbacks.append(lambda r=remaining_now: self.on_update_countdown(r))
             elif self._state == State.OVERLAY:
                 if not self._overlay_paused:
                     self._break_remaining -= dt
                     if self.on_update_countdown:
-                        callbacks.append(lambda: self.on_update_countdown(int(self._break_remaining)))
+                        remaining_now = int(self._break_remaining)
+                        callbacks.append(lambda r=remaining_now: self.on_update_countdown(r))
                     if self._break_remaining <= 0:
                         if self.on_close_overlay:
                             callbacks.append(self.on_close_overlay)

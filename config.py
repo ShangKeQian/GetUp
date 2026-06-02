@@ -50,8 +50,13 @@ class Config:
                 saved = {}
             for key in DEFAULTS:
                 if key in saved:
-                    if isinstance(saved[key], type(DEFAULTS[key])):
-                        self._data[key] = saved[key]
+                    expected = type(DEFAULTS[key])
+                    val = saved[key]
+                    # 接受 float 类型的整数值（JSON 无 int/float 区分）
+                    if expected is int and isinstance(val, float) and val == int(val):
+                        val = int(val)
+                    if isinstance(val, expected):
+                        self._data[key] = val
 
     def __getattr__(self, name: str):
         if name.startswith("_"):
