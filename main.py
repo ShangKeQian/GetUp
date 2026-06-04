@@ -211,7 +211,7 @@ class GetUpApp:
 
     def _update_work_time(self, elapsed):
         self._ui_cb.post(lambda: self._main_window.update_work_countdown(elapsed))
-        self._ui_cb.post(lambda: self._tray.update_work_elapsed(elapsed))
+        self._ui_cb.post(lambda: self._tray.update_work_elapsed(elapsed, self._timer.remaining_seconds))
 
     def _reset_work_time(self):
         self._ui_cb.post(self._main_window.reset_countdown)

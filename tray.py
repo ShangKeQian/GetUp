@@ -124,6 +124,7 @@ class SystemTray(QSystemTrayIcon):
         self._present = True
         self._sleeping = False
         self._work_elapsed = 0
+        self._remaining = 0
 
         self._update_icon()
         self._build_menu()
@@ -248,7 +249,14 @@ class SystemTray(QSystemTrayIcon):
         self.setIcon(QIcon(pixmap))
 
         state_text, _ = self._get_state_info()
-        self.setToolTip(f"GetUp · {state_text}")
+        if self._running and not self._sleeping:
+            if self._present:
+                remaining_str = fmt_mmss(self._remaining)
+                self.setToolTip(f"GetUp · {state_text}\n下次休息: {remaining_str}")
+            else:
+                self.setToolTip(f"GetUp · {state_text}")
+        else:
+            self.setToolTip(f"GetUp · {state_text}")
 
     def update_presence(self, present):
         self._present = present
@@ -271,8 +279,9 @@ class SystemTray(QSystemTrayIcon):
         self._build_menu()
         self._update_icon()
 
-    def update_work_elapsed(self, seconds):
+    def update_work_elapsed(self, seconds, remaining=0):
         self._work_elapsed = seconds
-        # 不重建菜单——每秒调用会导致正在显示的菜单被关闭
+        self._remaining = remaining
+        self._update_icon()
 
 
