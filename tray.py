@@ -165,21 +165,7 @@ class SystemTray(QSystemTrayIcon):
         header.setEnabled(False)
         menu.addSeparator()
 
-        # 工作/离开时间
-        if self._running and not self._sleeping:
-            if self._present:
-                work_str = fmt_mmss(self._work_elapsed)
-                work_item = menu.addAction(f"⏱  已工作 {work_str}")
-                work_item.setEnabled(False)
-
-                remaining = max(0, self._config.work_minutes * 60 - self._work_elapsed)
-                next_str = fmt_mmss(remaining)
-                next_item = menu.addAction(f"📅  下次休息: {next_str}")
-                next_item.setEnabled(False)
-            else:
-                away_item = menu.addAction("⏱  无人状态")
-                away_item.setEnabled(False)
-        elif self._sleeping:
+        if self._sleeping:
             sleep_item = menu.addAction("🌙  智能休眠中")
             sleep_item.setEnabled(False)
         elif not self._running:
