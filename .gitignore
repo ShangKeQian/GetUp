@@ -32,3 +32,6 @@ GetUp-Rust/dist/
 
 # GetUp-Rust 目录（包含大文件）
 GetUp-Rust/
+
+# GetUp_C 目录（包含大文件）
+GetUp_C/
