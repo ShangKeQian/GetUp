@@ -4,7 +4,7 @@ Windows 系统托盘应用 — 久坐提醒，起身活动。
 
 GetUp 通过键盘鼠标操作和摄像头人脸检测判断你是否在电脑前，连续工作超过设定时长后弹出遮罩提醒你起身休息。
 
-> **本项目完全由 AI 编写**，使用 [Claude](https://claude.ai/) 和 [OpenCode](https://opencode.ai/) 作为开发工具。
+> **本项目完全由 AI 编写**，使用 [OpenCode](https://opencode.ai/) 作为开发工具。
 
 ## 功能
 

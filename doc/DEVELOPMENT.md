@@ -1,6 +1,8 @@
 # GetUp 开发文档
 
 > GetUp 是一个 Windows 系统托盘应用，通过键盘鼠标活动和摄像头人脸检测判断用户是否在电脑前，连续久坐后弹出全屏遮罩提醒起身活动。
+>
+> **本项目完全由 AI 编写**，使用 OpenCode 作为开发工具。
 
 ---
 
@@ -37,11 +39,11 @@ GetUp/
 ├── detectors/
 │   └── camera.py        # 摄像头人脸检测（MediaPipe BlazeFace）
 ├── tests/               # 单元测试
-├── 前端设计/             # UI 设计稿（HTML 原型）
 ├── build.py             # PyInstaller 打包脚本
 ├── requirements.txt     # Python 依赖
-├── blaze_face_short_range.tflite  # MediaPipe 人脸检测模型
-└── config.json          # 运行时配置（自动生成）
+├── blaze_face_short_range.tflite  # MediaPipe 人脸检测模型（gitignore）
+├── config.json          # 运行时配置（自动生成，gitignore）
+└── GetUp.spec           # PyInstaller spec 文件（版本控制中）
 ```
 
 ### 数据流
@@ -518,9 +520,26 @@ python build.py
 
 ### 注意事项
 
-- 打包前必须关闭已运行的 `GetUp.exe`，否则 `dist/` 目录被占用
+- 打包前必须关闭已运行的 `GetUp.exe`，否则 `dist/` 目录被占用（`taskkill /F /IM GetUp.exe`）
 - PySide6 需要手动安装（不在 `requirements.txt` 中）
 - 打包后首次运行可能较慢（MediaPipe 模型加载）
+- `config.json`、`blaze_face_short_range.tflite`、`dist/`、`build/` 均被 gitignore
+
+### GitHub Release
+
+```bash
+# 1. 打包
+python build.py
+
+# 2. 压缩
+Compress-Archive -Path "dist\GetUp\*" -DestinationPath "dist\GetUp-vX.Y.Z.zip" -Force
+
+# 3. 创建标签并推送
+git tag -a vX.Y.Z -m "GetUp vX.Y.Z"
+git push origin vX.Y.Z
+
+# 4. 通过 GitHub API 创建 Release 并上传 zip（或手动在网页操作）
+```
 
 ---
 
