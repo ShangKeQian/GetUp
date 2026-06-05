@@ -20,3 +20,12 @@ GetUp-Rust/opencv/
 GetUp-Rust/target/
 GetUp-Rust/node_modules/
 GetUp-Rust/dist/
+
+# 开发工具配置
+.mcp.json
+.codex/
+.claude/agents/
+.claude/settings.local.json
+
+# 前端设计文件
+前端设计/

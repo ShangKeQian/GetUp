@@ -1,4 +1,5 @@
 import os
+import threading
 from typing import Optional
 
 import cv2
@@ -12,6 +13,7 @@ class CameraDetector:
         self._camera_index = camera_index
         self._cap = None
         self._face_detector = None
+        self._lock = threading.Lock()
         self._init_face_detector()
 
     def _init_face_detector(self):
@@ -34,23 +36,28 @@ class CameraDetector:
         return self._cap.isOpened()
 
     def check_once(self) -> Optional[bool]:
-        if not self._ensure_open():
-            return None
-        ret, frame = self._cap.read()
-        if not ret or frame is None:
-            return None
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-        result = self._face_detector.detect(mp_image)
-        return len(result.detections) > 0
+        with self._lock:
+            if not self._ensure_open():
+                return None
+            ret, frame = self._cap.read()
+            if not ret or frame is None:
+                return None
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+            result = self._face_detector.detect(mp_image)
+            return len(result.detections) > 0
 
     def release(self):
-        if self._cap is not None:
-            self._cap.release()
-            self._cap = None
+        with self._lock:
+            if self._cap is not None:
+                self._cap.release()
+                self._cap = None
 
     def close(self):
-        self.release()
-        if self._face_detector is not None:
-            self._face_detector.close()
-            self._face_detector = None
+        with self._lock:
+            if self._cap is not None:
+                self._cap.release()
+                self._cap = None
+            if self._face_detector is not None:
+                self._face_detector.close()
+                self._face_detector = None
