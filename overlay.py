@@ -1,6 +1,6 @@
 import math
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame,
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame,
 )
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer
 from PySide6.QtGui import QPainter, QColor, QPen
@@ -208,7 +208,7 @@ class OverlayWindow(QMainWindow):
         super().showEvent(event)
         if not self._is_shown:
             self._is_shown = True
-            screen = self.screen()
+            screen = QApplication.primaryScreen()
             if screen:
                 geom = screen.geometry()
                 h = geom.height() // 3
@@ -429,7 +429,7 @@ class RestTimerWindow(QMainWindow):
         super().showEvent(event)
         if not self._is_shown:
             self._is_shown = True
-            screen = self.screen()
+            screen = QApplication.primaryScreen()
             if screen:
                 geom = screen.geometry()
                 self.setFixedSize(geom.width(), geom.height())
