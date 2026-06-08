@@ -274,7 +274,7 @@ enumerate_cameras(max_index=10) -> list[dict]
 
 #### 提醒模式 (`OverlayWindow`)
 
-全屏深色遮罩，连续工作超时后弹出。
+深色遮罩，连续工作超时后弹出，显示在主屏幕中央 1/3 高度。
 
 **布局结构：**
 ```
@@ -303,7 +303,7 @@ enumerate_cameras(max_index=10) -> list[dict]
 
 **关键实现：**
 - `RingProgress`：260×260 自绘环形进度条，带半透明辉光层
-- 首次显示时全屏覆盖 + 300ms 淡入动画
+- 首次显示时定位到主屏幕中央 1/3 高度 + 300ms 淡入动画
 - `showOverlay()` / `updateCountdown(seconds)` / `destroyOverlay()` API
 
 #### 休息计时模式 (`RestTimerWindow`)
@@ -601,7 +601,7 @@ git push origin vX.Y.Z
 
 #### 遮罩窗口重设计 (`overlay.py`)
 
-- **全屏覆盖**：从 1/3 屏幕高度 → 真正全屏
+- **遮罩覆盖**：主屏幕中央 1/3 高度覆盖
 - **环形进度条**：`CircularProgress`(160px) → `RingProgress`(260px)，带绿色辉光效果
 - **新增元素**：
   - 副标题 "站起来伸展一下吧"
