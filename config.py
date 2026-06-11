@@ -7,11 +7,18 @@ APP_NAME = "GetUp"
 REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 DEFAULTS = {
-    "work_minutes": 30,
+    "work_minutes": 25,
     "break_minutes": 2,
     "camera_index": 0,
     "startup_enabled": False,
     "sleep_timeout_minutes": 15,
+}
+
+CONSTRAINTS = {
+    "work_minutes": {"min": 5, "max": 120},
+    "break_minutes": {"min": 1, "max": 30},
+    "camera_index": {"min": 0, "max": 9},
+    "sleep_timeout_minutes": {"min": 5, "max": 120},
 }
 
 
@@ -56,6 +63,15 @@ class Config:
                     if expected is int and isinstance(val, float) and val == int(val):
                         val = int(val)
                     if isinstance(val, expected):
+                        if key in CONSTRAINTS:
+                            c = CONSTRAINTS[key]
+                            if not (c["min"] <= val <= c["max"]):
+                                print(
+                                    f"[Config] '{key}' value {val} out of range [{c['min']}, {c['max']}], "
+                                    f"using default {DEFAULTS[key]}",
+                                    file=sys.stderr,
+                                )
+                                continue
                         self._data[key] = val
 
     def __getattr__(self, name: str):
@@ -78,6 +94,16 @@ class Config:
                         f"Attribute '{name}' expects {expected_type.__name__}, "
                         f"got {type(value).__name__}"
                     )
+                if name in CONSTRAINTS:
+                    c = CONSTRAINTS[name]
+                    if not (c["min"] <= value <= c["max"]):
+                        print(
+                            f"[Config] '{name}' value {value} out of range [{c['min']}, {c['max']}]",
+                            file=sys.stderr,
+                        )
+                        raise ValueError(
+                            f"Attribute '{name}' value {value} out of range [{c['min']}, {c['max']}]"
+                        )
                 data[name] = value
             else:
                 raise AttributeError(f"Config has no attribute '{name}'")
