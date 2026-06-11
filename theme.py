@@ -40,12 +40,6 @@ STATUS_ABSENT = "#f59e0b"
 STATUS_PAUSED = "#6366f1"
 STATUS_SLEEPING = "#6b7280"
 
-# ── 休息页面色板 ─────────────────────────────────────────
-REST_BG = "#f0fdf4"
-REST_FG = "#14532d"
-REST_MUTED = "#577a64"
-REST_BORDER = "#bbf7d0"
-
 
 MAIN_WINDOW_STYLE = f"""
 QMainWindow {{
@@ -208,32 +202,3 @@ QPushButton#close:pressed {{
 }}
 """
 
-REST_STYLE = f"""
-QMainWindow {{
-    background-color: {REST_BG};
-}}
-QWidget {{
-    background-color: {REST_BG};
-    color: {REST_FG};
-    font-family: "Segoe UI", "Microsoft YaHei";
-}}
-QLabel {{
-    background: transparent;
-}}
-QPushButton#close {{
-    background-color: {SURFACE};
-    color: {REST_FG};
-    border: 1px solid {REST_BORDER};
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 16px;
-}}
-QPushButton#close:hover {{
-    background-color: rgba(34, 197, 94, 0.08);
-    border-color: {ACCENT};
-}}
-QPushButton#close:pressed {{
-    background-color: rgba(34, 197, 94, 0.15);
-}}
-"""

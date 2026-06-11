@@ -18,6 +18,7 @@ def _make_tray():
         tray._break_remaining = 0
         tray._camera_active = False
         tray._config = MagicMock()
+        tray._timer = MagicMock()
         tray._on_toggle = None
         tray._on_quit = None
         tray._on_settings = None

@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QSystemTrayIcon, QMenu
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush, QPen, QPainterPath
 from PySide6.QtCore import Qt, QPointF
 from config import Config
+from timer import TimerEngine, State as TimerState
 from theme import STATUS_PRESENT, STATUS_ABSENT, STATUS_PAUSED, STATUS_SLEEPING, SURFACE, BORDER, FG, MUTED, fmt_mmss
 
 
@@ -113,13 +114,15 @@ def create_icon_pixmap(present=True, paused=False, sleeping=False, size=64):
 
 
 class SystemTray(QSystemTrayIcon):
-    def __init__(self, config: Config, on_toggle=None, on_quit=None, on_settings=None, on_wake=None, parent=None):
+    def __init__(self, config: Config, timer: TimerEngine, on_toggle=None, on_quit=None, on_settings=None, on_wake=None, on_manual_break=None, parent=None):
         super().__init__(parent)
         self._config = config
+        self._timer = timer
         self._on_toggle = on_toggle
         self._on_quit = on_quit
         self._on_settings = on_settings
         self._on_wake = on_wake
+        self._on_manual_break_cb = on_manual_break
         self._running = False
         self._present = True
         self._sleeping = False
@@ -186,6 +189,12 @@ class SystemTray(QSystemTrayIcon):
         menu.addSeparator()
 
         # 操作
+        # 立即休息：操作区第一位（仅在非休眠、非暂停时启用）
+        break_action = menu.addAction("🧘  立即休息")
+        break_action.setEnabled(self._running and not self._sleeping and self._timer.state == TimerState.TIMING)
+        if self._on_manual_break_cb:
+            break_action.triggered.connect(self._on_manual_break_cb)
+
         if self._sleeping:
             wake_action = menu.addAction("▶  唤醒")
             if self._on_wake:
@@ -269,5 +278,4 @@ class SystemTray(QSystemTrayIcon):
         self._work_elapsed = seconds
         self._remaining = remaining
         self._update_icon()
-
 

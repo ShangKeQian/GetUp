@@ -6,7 +6,7 @@ from config import Config
 
 def test_default_values():
     cfg = Config()
-    assert cfg.work_minutes == 30
+    assert cfg.work_minutes == 25
     assert cfg.break_minutes == 2
     assert cfg.camera_index == 0
 
@@ -26,7 +26,7 @@ def test_save_and_load():
 
 def test_load_missing_file_uses_defaults():
     cfg = Config("/nonexistent/path/config.json")
-    assert cfg.work_minutes == 30
+    assert cfg.work_minutes == 25
 
 
 def test_reject_unknown_attribute():
@@ -42,7 +42,7 @@ def test_to_dict_returns_defensive_copy():
     cfg = Config()
     d = cfg.to_dict()
     d["work_minutes"] = 999
-    assert cfg.work_minutes == 30, "Modifying to_dict() result should not affect config"
+    assert cfg.work_minutes == 25, "Modifying to_dict() result should not affect config"
 
 
 def test_corrupt_file_uses_defaults():
@@ -51,7 +51,7 @@ def test_corrupt_file_uses_defaults():
         with open(path, "w", encoding="utf-8") as f:
             f.write("{{{this is not json!!!")
         cfg = Config(path)
-        assert cfg.work_minutes == 30
+        assert cfg.work_minutes == 25
 
 
 def test_set_startup_closes_key_on_exception():
@@ -75,5 +75,26 @@ def test_corrupt_config_values_use_defaults():
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"work_minutes": "not_a_number", "break_minutes": 5}, f)
         cfg = Config(path)
-        assert cfg.work_minutes == 30
+        assert cfg.work_minutes == 25
         assert cfg.break_minutes == 5
+
+
+def test_reject_out_of_range_value():
+    cfg = Config()
+    try:
+        cfg.work_minutes = 0
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "out of range" in str(e)
+        assert "0" in str(e)
+    assert cfg.work_minutes == 25
+
+
+def test_out_of_range_load_uses_default():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = os.path.join(tmpdir, "config.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"work_minutes": 200, "break_minutes": 0}, f)
+        cfg = Config(path)
+        assert cfg.work_minutes == 25
+        assert cfg.break_minutes == 2

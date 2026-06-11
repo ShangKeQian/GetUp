@@ -28,6 +28,8 @@ class TimerEngine:
         self.on_update_work_time: Optional[Callable] = None
         self.on_close_overlay: Optional[Callable] = None
         self.on_reset_work_time: Optional[Callable] = None
+        self.on_state_timing: Optional[Callable] = None
+        self.on_state_idle: Optional[Callable] = None
 
     @property
     def state(self) -> State:
@@ -64,6 +66,8 @@ class TimerEngine:
             if self._state == State.IDLE:
                 self._state = State.TIMING
                 self._elapsed = 0
+                if self.on_state_timing:
+                    callbacks.append(self.on_state_timing)
                 if self.on_reset_work_time:
                     callbacks.append(self.on_reset_work_time)
             elif self._state == State.OVERLAY:
@@ -88,6 +92,20 @@ class TimerEngine:
             self._break_remaining = 0
             self._overlay_paused = False
 
+    def manual_break(self) -> bool:
+        with self._lock:
+            if self._state != State.TIMING:
+                return False
+            self._state = State.OVERLAY
+            self._break_remaining = self._break_seconds
+            self._overlay_paused = False
+
+        if self.on_show_overlay:
+            self.on_show_overlay()
+        if self.on_update_countdown:
+            self.on_update_countdown(int(self._break_remaining))
+        return True
+
     def tick(self):
         callbacks = []
         with self._lock:
@@ -104,6 +122,8 @@ class TimerEngine:
                         self._state = State.IDLE
                         self._elapsed = 0
                         self._is_absent = False
+                        if self.on_state_idle:
+                            callbacks.append(self.on_state_idle)
                         if self.on_reset_work_time:
                             callbacks.append(self.on_reset_work_time)
                 else:
