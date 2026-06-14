@@ -56,11 +56,18 @@ TimerEngine 的回调（on_show_overlay、on_update_work_time 等）在 tick 线
 - 启动时打开摄像头（DSHOW 后端），check_once() 抓一帧做人脸检测
 - 内部有 threading.Lock 保护，支持从 tick 线程安全调用
 - 休眠时释放摄像头节省资源，唤醒时自动重新打开
-- tick 线程 finally 中调用 `camera.close()`（而非 `release()`），确保释放 face_detector
+- tick 线程 finally 中调用 `presence.close()`（而非直接 `camera.close()`），由 PresenceDetector 统一管理资源
+
+**在位检测（detectors/presence.py — PresenceDetector）：**
+
+- 内聚 pynput 键盘/鼠标监听 + CameraDetector + 5 秒节流 + 休眠超时
+- `tick() -> bool`：一次检测周期，内部持有 `threading.Lock` 与 `wake()` 互斥
+- `start()` 在 tick 线程启动 pynput 监听器；`close()` 幂等释放（`_closed` 守卫）
 
 **配置（config.py）：**
 
 - JSON 配置文件（config.json），支持 work_minutes / break_minutes / camera_index / startup_enabled / sleep_timeout_minutes
+- 范围校验（CONSTRAINTS）：越界值拒绝并打印 stderr 警告，JSON 加载时越界回退默认值
 - startup_enabled 通过 Windows 注册表 HKCU\...\Run 实现开机启动
 - 类型检查时接受 float 类型的整数值（如 `30.0` → `30`）
 

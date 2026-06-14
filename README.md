@@ -55,7 +55,7 @@ python build.py
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `work_minutes` | 30 | 连续工作多少分钟后弹出提醒 |
+| `work_minutes` | 25 | 连续工作多少分钟后弹出提醒 |
 | `break_minutes` | 2 | 休息倒计时时长（分钟） |
 | `camera_index` | 0 | 摄像头设备索引 |
 | `startup_enabled` | false | 是否开机自启 |
@@ -63,13 +63,15 @@ python build.py
 
 ## 工作原理
 
+在位检测由 `PresenceDetector` 模块内聚处理（pynput 输入监听 + 摄像头人脸检测 + 节流 + 休眠超时），对外暴露 `tick()` 接口：
+
 ```
-在位检测（每秒）
+PresenceDetector.tick() → bool（是否有人）
 ├── 键盘/鼠标 5 秒内有操作 → 有人
-├── 5 秒无操作 → 摄像头检测人脸
-│   ├── 检测到人脸 → 有人（5 秒内跳过重复检测）
+├── 5 秒无操作 → 摄像头检测人脸（5 秒节流）
+│   ├── 检测到人脸 → 有人（5 秒内缓存）
 │   └── 未检测到 → 无人
-└── 无人 + 摄像头未检测到 → 无人
+└── 持续无人超过 sleep_timeout → 休眠，释放摄像头
 
 计时器状态机
 ├── IDLE（空闲）→ 有人出现 → 开始计时
@@ -95,7 +97,8 @@ GetUp/
 ├── theme.py             # UI 主题样式
 ├── camera_utils.py      # 摄像头枚举工具
 ├── detectors/
-│   └── camera.py        # 摄像头人脸检测（MediaPipe）
+│   ├── camera.py        # 摄像头人脸检测（MediaPipe）
+│   └── presence.py      # 在位检测融合（pynput + camera + 休眠）
 ├── tests/               # 单元测试
 ├── build.py             # PyInstaller 打包脚本
 ├── requirements.txt     # Python 依赖
