@@ -242,7 +242,9 @@ class SystemTray(QSystemTrayIcon):
             sleeping=self._sleeping
         )
         self.setIcon(QIcon(pixmap))
+        self._update_tooltip()
 
+    def _update_tooltip(self):
         state_text, _ = self._get_state_info()
         if self._running and not self._sleeping:
             if self._present:
@@ -277,5 +279,12 @@ class SystemTray(QSystemTrayIcon):
     def update_work_elapsed(self, seconds, remaining=0):
         self._work_elapsed = seconds
         self._remaining = remaining
+        # 仅更新 tooltip，不重建图标像素图（避免每秒 QPainter 开销）
+        self._update_tooltip()
+
+    def set_timer(self, timer):
+        """替换内部 timer 引用（封装私有属性访问）"""
+        self._timer = timer
+        self._build_menu()
         self._update_icon()
 

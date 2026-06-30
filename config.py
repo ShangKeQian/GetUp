@@ -6,6 +6,20 @@ import winreg
 APP_NAME = "GetUp"
 REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
+
+def _default_config_path() -> str:
+    """配置文件默认路径：优先使用 %APPDATA%/GetUp/，避免重打包后丢失。"""
+    if sys.platform == "win32":
+        base = os.environ.get("APPDATA") or os.path.expanduser("~")
+        config_dir = os.path.join(base, APP_NAME)
+        try:
+            os.makedirs(config_dir, exist_ok=True)
+        except OSError:
+            # 回退到程序所在目录
+            return os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "config.json")
+        return os.path.join(config_dir, "config.json")
+    return os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "config.json")
+
 DEFAULTS = {
     "work_minutes": 25,
     "break_minutes": 2,
@@ -45,9 +59,7 @@ def set_startup(enabled: bool):
 
 class Config:
     def __init__(self, path: str | None = None):
-        self._path = path or os.path.join(
-            os.path.dirname(os.path.abspath(sys.argv[0])), "config.json"
-        )
+        self._path = path or _default_config_path()
         self._data = dict(DEFAULTS)
         if os.path.exists(self._path):
             try:
@@ -108,9 +120,14 @@ class Config:
             else:
                 raise AttributeError(f"Config has no attribute '{name}'")
 
-    def save(self):
-        with open(self._path, "w", encoding="utf-8") as f:
-            json.dump(self._data, f, indent=2, ensure_ascii=False)
+    def save(self) -> bool:
+        try:
+            with open(self._path, "w", encoding="utf-8") as f:
+                json.dump(self._data, f, indent=2, ensure_ascii=False)
+            return True
+        except OSError as e:
+            print(f"[Config] 保存失败: {e}", file=sys.stderr)
+            return False
 
     def to_dict(self) -> dict:
         return dict(self._data)
