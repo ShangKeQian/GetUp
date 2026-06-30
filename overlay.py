@@ -143,10 +143,10 @@ class OverlayWindow(QMainWindow):
         root.addLayout(tips_layout)
 
     def _create_tip_card(self, icon, text, color):
-        card = QLabel(text)
+        card = QLabel(f"{icon}  {text}")
         card.setStyleSheet(f"""
             QLabel {{
-                color: {OVL_MUTED};
+                color: {color};
                 border: 1px solid rgba(255, 255, 255, 0.15);
                 border-radius: 8px;
                 padding: 10px 24px;
@@ -195,6 +195,9 @@ class OverlayWindow(QMainWindow):
     def destroy_overlay(self):
         if self._is_shown:
             self._is_shown = False
+            # 停止可能正在进行的淡入动画，避免对已隐藏窗口操作
+            if hasattr(self, '_fade_anim'):
+                self._fade_anim.stop()
             self.hide()
             if self._on_close_callback:
                 self._on_close_callback()

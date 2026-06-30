@@ -10,8 +10,8 @@ class PresenceDetector:
         self._sleep_timeout_seconds = sleep_timeout_minutes * 60
         self._lock = threading.Lock()
 
-        self._last_input_time = time.time()
-        self._last_camera_found_time = time.time()
+        self._last_input_time = time.monotonic()
+        self._last_camera_found_time = time.monotonic()
         self._last_camera_check_time = 0.0
         self._sleeping = False
         self._idle_start_time = None
@@ -23,7 +23,7 @@ class PresenceDetector:
 
     def start(self):
         def on_input(*args):
-            self._last_input_time = time.time()
+            self._last_input_time = time.monotonic()
 
         self._mouse_listener = pynput.mouse.Listener(on_move=on_input, on_click=on_input)
         self._keyboard_listener = pynput.keyboard.Listener(on_press=on_input, on_release=on_input)
@@ -33,9 +33,11 @@ class PresenceDetector:
         self._keyboard_listener.start()
 
     def tick(self):
-        now = time.time()
+        now = time.monotonic()
 
         with self._lock:
+            if self._closed:
+                return False
             idle_time = now - self._last_input_time
             person_present = False
 
@@ -76,7 +78,8 @@ class PresenceDetector:
 
     @property
     def is_sleeping(self):
-        return self._sleeping
+        with self._lock:
+            return self._sleeping
 
     def wake(self):
         with self._lock:
@@ -84,9 +87,12 @@ class PresenceDetector:
             self._idle_start_time = None
 
     def close(self):
-        if self._closed:
-            return
-        self._closed = True
+        """关闭检测器。先在锁内标记 _closed，阻止 tick 继续使用；锁外停止监听器。"""
+        with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+        # 锁外停止监听器（stop 可能阻塞）
         if self._mouse_listener:
             self._mouse_listener.stop()
         if self._keyboard_listener:

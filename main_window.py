@@ -133,8 +133,9 @@ class FluentToggle(QWidget):
         self.update()
 
     def mousePressEvent(self, event):
-        self._checked = not self._checked
-        self.update()
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._checked = not self._checked
+            self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -454,7 +455,6 @@ class MainWindow(QMainWindow):
     def _cache_cameras(self):
         if self._cameras_cached:
             return
-        self._cameras_cached = True
 
         def _scan():
             cameras = enumerate_cameras()
@@ -466,9 +466,12 @@ class MainWindow(QMainWindow):
     def _on_cameras_scanned(self, cameras, names):
         self._cameras = cameras
         self._camera_names = names
+        self._cameras_cached = True
         self._camera_combo.clear()
-        self._camera_combo.addItems(names)
         for i, name in enumerate(names):
+            # itemData 存储 camera index，避免重名时无法区分
+            idx = cameras[i]["index"] if i < len(cameras) else -1
+            self._camera_combo.addItem(name, idx)
             self._camera_combo.setItemData(i, name, Qt.ItemDataRole.ToolTipRole)
         for i, cam in enumerate(cameras):
             if cam["index"] == self._config.camera_index:
@@ -480,18 +483,24 @@ class MainWindow(QMainWindow):
         self._config.break_minutes = self._break_spin.value()
         self._config.sleep_timeout_minutes = self._sleep_spin.value()
 
-        selected = self._camera_combo.currentText()
-        for cam in self._cameras:
-            if cam["name"] == selected:
-                self._config.camera_index = cam["index"]
-                break
+        selected = self._camera_combo.currentData()
+        if selected is not None and selected >= 0:
+            self._config.camera_index = selected
 
         startup = self._startup_toggle.isChecked()
         if startup != self._config.startup_enabled:
             self._config.startup_enabled = startup
             set_startup(startup)
 
-        self._config.save()
+        if not self._config.save():
+            self._save_btn.setText("保存失败 ✗")
+            self._save_btn.setStyleSheet(
+                f"background-color: #ef4444; color: white; border: none; "
+                "border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: bold;"
+            )
+            QSingleShotTimer.singleShot(1500, self._restore_save_btn)
+            return
+
         if self._on_save:
             self._on_save()
 

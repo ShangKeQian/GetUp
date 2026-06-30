@@ -28,8 +28,6 @@ class TimerEngine:
         self.on_update_work_time: Optional[Callable] = None
         self.on_close_overlay: Optional[Callable] = None
         self.on_reset_work_time: Optional[Callable] = None
-        self.on_state_timing: Optional[Callable] = None
-        self.on_state_idle: Optional[Callable] = None
 
     @property
     def state(self) -> State:
@@ -66,8 +64,6 @@ class TimerEngine:
             if self._state == State.IDLE:
                 self._state = State.TIMING
                 self._elapsed = 0
-                if self.on_state_timing:
-                    callbacks.append(self.on_state_timing)
                 if self.on_reset_work_time:
                     callbacks.append(self.on_reset_work_time)
             elif self._state == State.OVERLAY:
@@ -99,11 +95,12 @@ class TimerEngine:
             self._state = State.OVERLAY
             self._break_remaining = self._break_seconds
             self._overlay_paused = False
+            initial_countdown = int(self._break_remaining)
 
         if self.on_show_overlay:
             self.on_show_overlay()
         if self.on_update_countdown:
-            self.on_update_countdown(int(self._break_remaining))
+            self.on_update_countdown(initial_countdown)
         return True
 
     def tick(self):
@@ -115,6 +112,12 @@ class TimerEngine:
             dt = now - self._last_tick_time
             self._last_tick_time = now
 
+            # 系统休眠/挂起后 dt 会跳跃（数千秒），重置计时避免误触发遮罩或秒关
+            if dt > 60:
+                self._elapsed = 0
+                self._break_remaining = self._break_seconds
+                return
+
             if self._state == State.TIMING:
                 if self._is_absent:
                     absence_duration = now - self._absence_start
@@ -122,8 +125,6 @@ class TimerEngine:
                         self._state = State.IDLE
                         self._elapsed = 0
                         self._is_absent = False
-                        if self.on_state_idle:
-                            callbacks.append(self.on_state_idle)
                         if self.on_reset_work_time:
                             callbacks.append(self.on_reset_work_time)
                 else:

@@ -1,3 +1,4 @@
+import sys
 import cv2
 
 
@@ -15,6 +16,6 @@ def enumerate_cameras(max_index: int = 10) -> list[dict]:
                     cameras.append({"index": i, "name": name})
                 finally:
                     cap.release()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[camera_utils] 探测摄像头 {i} 失败: {e}", file=sys.stderr)
     return cameras
