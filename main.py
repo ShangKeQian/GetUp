@@ -203,9 +203,14 @@ class GetUpApp:
         self._timer.on_overlay_dismissed()
 
     def _update_main_window_status(self):
+        """锁外调用：快照状态并投递 UI 更新。自行获取锁。"""
         with self._lock:
             sleeping = self._last_sleeping
             last_presence = self._last_presence
+        self._post_status_update(sleeping, last_presence)
+
+    def _post_status_update(self, sleeping, last_presence):
+        """已快照后调用：根据值构造状态文案并投递到主线程。不获取锁。"""
         if sleeping:
             status = "休眠"
         elif last_presence is None:
@@ -271,7 +276,12 @@ class GetUpApp:
                 )
                 self._tick_thread.start()
             self._tray.update_running(self._running)
-            self._update_main_window_status()
+            # 在锁内快照状态值（避免重入死锁，不调用 _update_main_window_status）
+            sleeping = self._last_sleeping
+            last_presence = self._last_presence
+
+        # 锁外投递 UI 更新
+        self._post_status_update(sleeping, last_presence)
 
         # 锁外关闭旧检测器
         if old_detector:
