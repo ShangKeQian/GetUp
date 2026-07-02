@@ -271,7 +271,7 @@ class MainWindow(QMainWindow):
         title = QLabel("GetUp 设置")
         title.setStyleSheet(f"font-size: 22px; font-weight: 700; color: {FG}; letter-spacing: -0.02em;")
         title_col.addWidget(title)
-        version = QLabel("v1.2.0")
+        version = QLabel("v2.1.0")
         version.setStyleSheet(f"font-size: 13px; color: {MUTED};")
         title_col.addWidget(version)
         header.addLayout(title_col)
