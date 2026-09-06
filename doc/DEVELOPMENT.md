@@ -576,6 +576,25 @@ git push origin vX.Y.Z
 
 ## 更新日志
 
+### v2.2.0 — 稳定性与启动性能 (2026-07-30)
+
+#### 稳定性修复
+
+- **UI 冻结消除**：`_toggle_detection`/`_restart_detection`/`_quit` 三处主线程同步 `join(timeout=3)` 改为后台 `_reap_worker` 线程回收，摄像头被占用时点暂停/保存/退出不再冻结 UI 最长 3s
+- **唤醒崩溃修复**：`_wake_from_sleep` 锁内快照 `_detector`，`_restart_detection` 期间置 None 时不再抛 `AttributeError`
+- **设置重启安全**：`_restart_detection` 断开旧 timer 回调，防止旧 tick 线程退出前对新 UI 触发遮罩/倒计时
+
+#### 性能优化
+
+- **摄像头检测移出锁**：`PresenceDetector.tick()` 改三阶段，`check_once()` 不再持锁，`wake()`/`is_sleeping()` 不被摄像头打开(1.5-2.5s)阻塞
+- **摄像头失败指数退避**：被占用/错误时 30→60→120s 退避，不再每 5s 重试致 tooltip 跳秒
+- **开机自启影响优化**：`detectors/camera.py` 重库 cv2/mediapipe(~2.4s+57MB) 与模型改为懒加载，`MainWindow` 摄像头枚举推迟到首次打开设置窗口——启动期不再加载重库，~2.7s 开销推迟到首次摄像头检测
+
+#### 构建
+
+- `build.py` 显式 `--hidden-import cv2`（适配懒加载重构）
+- 版本号统一：新增 `config.VERSION` 单一来源，设置窗口读它显示
+
 ### v2.1.2 — 托盘 tooltip 优化 (2026-06-04)
 
 #### 功能增强

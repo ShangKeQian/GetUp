@@ -35,3 +35,11 @@ GetUp-Rust/
 
 # GetUp_C 目录（包含大文件）
 GetUp_C/
+
+# 一次性构建脚本与 v2.2.0 构建中间产物
+_build_once.py
+build_v220/
+dist_v220/
+
+# WorkBuddy 本地工作记忆
+.workbuddy/

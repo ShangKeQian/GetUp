@@ -22,6 +22,7 @@ def main():
         "--add-data", f"{mp_path}/tasks/metadata;mediapipe/tasks/metadata/",
         "--hidden-import", "pynput.keyboard._win32",
         "--hidden-import", "pynput.mouse._win32",
+        "--hidden-import", "cv2",
         "--hidden-import", "mediapipe",
         "--hidden-import", "mediapipe.tasks",
         "--hidden-import", "mediapipe.tasks.python",
