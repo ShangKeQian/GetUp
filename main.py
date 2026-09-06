@@ -126,11 +126,24 @@ class GetUpApp:
                 self._tick_thread.start()
             self._tray.update_running(self._running)
 
-        # 锁外等待旧线程退出，然后关闭旧检测器
-        if old_thread and old_thread.is_alive():
-            old_thread.join(timeout=3)
-        if old_detector:
-            old_detector.close()
+        # 锁外后台回收旧线程与旧检测器，避免 join 阻塞主线程导致 UI 冻结（P2）
+        if old_thread or old_detector:
+            self._reap_worker(old_thread, old_detector)
+
+    def _reap_worker(self, old_thread, old_detector):
+        """后台回收旧 tick 线程与旧检测器。
+
+        join 与 close 可能耗时（tick 线程可能卡在摄像头打开 1.5-2.5s），
+        放到后台 daemon 线程执行，避免阻塞 Qt 主线程导致 UI 冻结。
+        PresenceDetector.close() 幂等（_closed 守卫），与 tick 线程 finally
+        中的 close 不会冲突。
+        """
+        def _reap():
+            if old_thread and old_thread.is_alive():
+                old_thread.join(timeout=3)
+            if old_detector:
+                old_detector.close()
+        threading.Thread(target=_reap, daemon=True).start()
 
     def _tick_loop(self, generation):
         """tick 线程：在锁内快照 detector/timer，循环条件也在锁内检查（H2）。"""
@@ -238,6 +251,7 @@ class GetUpApp:
         with self._lock:
             was_running = self._running
             old_thread = self._tick_thread
+            old_timer = self._timer
             old_detector = self._detector
             if was_running:
                 self._running = False
@@ -245,9 +259,10 @@ class GetUpApp:
             # 标记检测器已废弃，新线程不会再使用它
             self._detector = None
 
-        # 锁外等待旧线程退出
-        if old_thread and old_thread.is_alive():
-            old_thread.join(timeout=3)
+        # 断开旧 timer 回调，防止旧 tick 线程在退出前对新 UI 触发遮罩/倒计时
+        for name in ("on_show_overlay", "on_update_countdown", "on_update_work_time",
+                     "on_close_overlay", "on_reset_work_time"):
+            setattr(old_timer, name, None)
 
         with self._lock:
             # 先关闭遮罩（使用旧 timer 的回调链）
@@ -283,12 +298,15 @@ class GetUpApp:
         # 锁外投递 UI 更新
         self._post_status_update(sleeping, last_presence)
 
-        # 锁外关闭旧检测器
-        if old_detector:
-            old_detector.close()
+        # 后台回收旧线程与旧检测器，避免 join 阻塞主线程（P2）
+        self._reap_worker(old_thread, old_detector)
 
     def _wake_from_sleep(self):
-        self._detector.wake()
+        with self._lock:
+            detector = self._detector
+        # _restart_detection 期间 _detector 可能被置 None，快照后跳过避免 AttributeError（Q1）
+        if detector is not None:
+            detector.wake()
         self._update_main_window_status()
 
     def _on_settings_saved(self):
@@ -299,15 +317,9 @@ class GetUpApp:
             self._running = False
             self._tick_generation += 1
             tick_thread = self._tick_thread
-        if tick_thread and tick_thread.is_alive():
-            tick_thread.join(timeout=3)
-            if tick_thread.is_alive():
-                # 线程未在超时内退出，不调用 close 避免并发使用（M6）
-                print("[GetUp] tick 线程未在超时内退出，跳过检测器关闭",
-                      file=sys.stderr)
-                self._app.quit()
-                return
-        self._detector.close()
+            detector = self._detector
+        # 后台回收，避免 join 阻塞主线程；进程退出时 OS 回收残留资源
+        self._reap_worker(tick_thread, detector)
         self._app.quit()
 
     def run(self):
