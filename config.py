@@ -4,6 +4,7 @@ import sys
 import winreg
 
 APP_NAME = "GetUp"
+VERSION = "2.2.0"
 REG_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 

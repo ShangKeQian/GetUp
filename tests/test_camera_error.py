@@ -25,6 +25,7 @@ def test_check_once_returns_none_on_read_failure():
 
 def test_check_once_returns_false_when_no_face():
     det = CameraDetector(camera_index=0)
+    det._init_face_detector()  # 模型懒加载：构造时不再自动加载，需显式触发
     with patch("detectors.camera.cv2.VideoCapture") as mock_cap, \
          patch("detectors.camera.cv2.cvtColor") as mock_cvt, \
          patch("detectors.camera.mp.Image") as mock_image:
@@ -42,6 +43,7 @@ def test_check_once_returns_false_when_no_face():
 
 def test_check_once_returns_true_when_face_detected():
     det = CameraDetector(camera_index=0)
+    det._init_face_detector()  # 模型懒加载：构造时不再自动加载，需显式触发
     with patch("detectors.camera.cv2.VideoCapture") as mock_cap, \
          patch("detectors.camera.cv2.cvtColor") as mock_cvt, \
          patch("detectors.camera.mp.Image") as mock_image:

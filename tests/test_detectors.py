@@ -62,6 +62,7 @@ def test_camera_reopens_after_release():
 
 def test_old_camera_released_when_reopen_fails():
     det = CameraDetector(camera_index=0)
+    det._init_face_detector()  # 模型懒加载：构造时不再自动加载，需显式触发
     with patch("detectors.camera.cv2.VideoCapture") as mock_cap, \
          patch("detectors.camera.cv2.cvtColor") as mock_cvt, \
          patch("detectors.camera.mp.Image"), \
@@ -86,6 +87,7 @@ def test_old_camera_released_when_reopen_fails():
 
 def test_close_frees_face_detector():
     det = CameraDetector(camera_index=0)
+    det._init_face_detector()  # 模型懒加载：构造时不再自动加载，需显式触发
     with patch.object(det._face_detector, "close") as mock_close:
         det.close()
         mock_close.assert_called_once()
@@ -107,6 +109,7 @@ def test_release_only_frees_camera():
 
 def test_check_once_works_after_release_and_reopen():
     det = CameraDetector(camera_index=0)
+    det._init_face_detector()  # 模型懒加载：构造时不再自动加载，需显式触发
     with patch("detectors.camera.cv2.VideoCapture") as mock_cap, \
          patch("detectors.camera.cv2.cvtColor") as mock_cvt, \
          patch("detectors.camera.mp.Image"), \

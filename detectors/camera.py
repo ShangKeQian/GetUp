@@ -2,10 +2,38 @@ import os
 import threading
 from typing import Optional
 
-import cv2
-import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
+
+_heavy_loaded = False
+
+
+def _ensure_heavy_loaded():
+    """按需加载重库 cv2 / mediapipe 并绑定到模块全局。
+
+    这两个库导入合计约 2.4s + 57MB 常驻，若在模块顶层导入会在应用启动（含开机
+    自启）时立即加载。改为首次摄像头检测时才加载，把开销推迟到用户空闲 5s+ 后。
+    函数内的 LOAD_GLOBAL 不会触发模块 __getattr__，故需在此显式加载并写入 globals。
+    """
+    global _heavy_loaded
+    if _heavy_loaded:
+        return
+    import cv2
+    import mediapipe as mp
+    from mediapipe.tasks import python
+    from mediapipe.tasks.python import vision
+    g = globals()
+    g["cv2"] = cv2
+    g["mp"] = mp
+    g["python"] = python
+    g["vision"] = vision
+    _heavy_loaded = True
+
+
+def __getattr__(name):
+    """外部访问 detectors.camera.cv2 / .mp 等（如 mock.patch）时按需加载。"""
+    if name in ("cv2", "mp", "python", "vision"):
+        _ensure_heavy_loaded()
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class CameraDetector:
@@ -16,9 +44,10 @@ class CameraDetector:
         self._lock = threading.Lock()
         self._read_failures = 0
         self._closed = False
-        self._init_face_detector()
+        # 不在此加载模型：延迟到首次 _ensure_open()，避免开机自启时加载 mediapipe/模型
 
     def _init_face_detector(self):
+        _ensure_heavy_loaded()
         if self._face_detector is None and not self._closed:
             model_path = os.path.join(os.path.dirname(__file__), '..', 'blaze_face_short_range.tflite')
             base_options = python.BaseOptions(model_asset_path=model_path)

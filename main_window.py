@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QTimer as QSingleShotTimer
 from PySide6.QtGui import QPainter, QColor, QPen
-from config import Config, set_startup
+from config import Config, set_startup, VERSION
 from camera_utils import enumerate_cameras
 from theme import MAIN_WINDOW_STYLE, BG, SURFACE, FG, MUTED, BORDER, ACCENT, ACCENT_DIM, STATUS_MAP, fmt_mmss
 
@@ -271,7 +271,7 @@ class MainWindow(QMainWindow):
         title = QLabel("GetUp 设置")
         title.setStyleSheet(f"font-size: 22px; font-weight: 700; color: {FG}; letter-spacing: -0.02em;")
         title_col.addWidget(title)
-        version = QLabel("v2.1.0")
+        version = QLabel(f"v{VERSION}")
         version.setStyleSheet(f"font-size: 13px; color: {MUTED};")
         title_col.addWidget(version)
         header.addLayout(title_col)
@@ -392,7 +392,9 @@ class MainWindow(QMainWindow):
 
         main_layout.addLayout(btn_row)
 
-        # 后台扫描摄像头
+    def showEvent(self, event):
+        """首次显示时才扫描摄像头，避免应用启动/开机自启时枚举设备抢占检测线程。"""
+        super().showEvent(event)
         self._cache_cameras()
 
     def _create_section(self, title):
