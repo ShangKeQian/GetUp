@@ -23,19 +23,19 @@ python build.py                   # 打包为 exe (输出到 dist/GetUp/)
 **线程模型：**
 
 - 主线程：PySide6 (Qt) 事件循环 + 所有 UI 更新
-- tick 线程：pynput 键盘/鼠标监听 + 每秒调用 timer.tick() + 摄像头检测
+- tick 线程：`main.py _tick_loop` 每秒调用 `PresenceDetector.tick()` → `timer.tick()`，回调经 `_CallbackSignal` 投递主线程
+- 旧 tick 线程与检测器由 `_reap_worker` **后台回收**，不在主线程 join（避免 UI 冻结最长 3s）
 
 **跨线程通信（关键）：**
 
 TimerEngine 的回调（on_show_overlay、on_update_work_time 等）在 tick 线程触发，但 UI 更新必须在 Qt 主线程执行。通过 `_CallbackSignal` 类实现：tick 线程调用 `self._ui_cb.post(fn)` 将回调投入队列，Qt 信号槽的 `QueuedConnection` 自动将回调投递到主线程事件循环执行。**不得使用 `QTimer.singleShot` 从非主线程调度 UI 更新**——它是静态方法，从 tick 线程调用时回调不会投递到主线程。
 
-**检测逻辑（main.py _tick_loop）：**
+**检测逻辑（detectors/presence.py — PresenceDetector.tick() 三阶段）：**
 
-- 键盘/鼠标 5 秒内有操作 → 有人
-- 5 秒无操作 → 摄像头检测人脸
-- 摄像头检测到人 → 5 秒内直接认为有人（跳过重复检测）
-- 无人且摄像头也未检测到 → 无人
-- 本地引用 `timer = self._timer` 和 `camera = self._camera`，避免 `_restart_detection` 替换时竞争
+- Phase 1（锁内）：判定是否需要摄像头检测——键鼠 5 秒内有操作、或 5 秒内摄像头见过人 → 直接用缓存判定，跳过检测
+- Phase 2（锁外）：需要时执行 `camera.check_once()`（打开/读帧可达数百毫秒至数秒，**不持锁**，不阻塞 `wake()`/`is_sleeping()`）
+- Phase 3（锁内）：应用检测结果、更新在位/休眠状态
+- 摄像头打开失败按 30→60→120s 指数退避（上限 `_BACKOFF_MAX=120`），被占用时不再每 5 秒阻塞一次
 
 **计时器状态机（timer.py）：**
 
@@ -57,6 +57,12 @@ TimerEngine 的回调（on_show_overlay、on_update_work_time 等）在 tick 线
 - 内部有 threading.Lock 保护，支持从 tick 线程安全调用
 - 休眠时释放摄像头节省资源，唤醒时自动重新打开
 - tick 线程 finally 中调用 `presence.close()`（而非直接 `camera.close()`），由 PresenceDetector 统一管理资源
+
+**懒加载（性能关键约束）：**
+
+- cv2、mediapipe 与 blaze_face 模型均**首次使用时才 import/加载**（实测省约 2.4s 导入 + 57MB 常驻内存）
+- 新代码不得在模块顶层 import 重库；`tests/test_lazy_imports.py` 守护此约束
+- 打包需显式 `--hidden-import cv2`（build.py / GetUp.spec 已配置），新增懒加载模块时同样要补
 
 **在位检测（detectors/presence.py — PresenceDetector）：**
 
@@ -95,7 +101,8 @@ TimerEngine 的回调（on_show_overlay、on_update_work_time 等）在 tick 线
 - opencv-python - 摄像头捕获（使用 DSHOW 后端加速）
 - mediapipe - 人脸检测（blaze_face_short_range.tflite 模型文件需在项目根目录）
 
-> **注意：** `requirements.txt` 可能未包含 PySide6，需手动安装或更新。
+> `requirements.txt` 已包含全部依赖（含 PySide6），`pip install -r requirements.txt` 即可。
+> 版本号唯一来源是 `config.VERSION`，发布打 tag / 打包均从它读取。
 
 ## Coding Guidelines
 

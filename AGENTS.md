@@ -5,7 +5,7 @@ GetUp: Windows 系统托盘久坐提醒应用。检测用户是否在电脑前�
 ## 常用命令
 
 ```bash
-pip install -r requirements.txt   # PySide6 不在 requirements.txt，需单独 pip install PySide6
+pip install -r requirements.txt   # 依赖已含 PySide6
 python main.py                    # 运行应用
 pytest tests/ -v                  # 运行所有测试
 pytest tests/test_timer.py -v     # 运行单个测试
@@ -18,23 +18,25 @@ python build.py                   # 打包（输出 dist/GetUp/，--onedir 模�
 
 - 主线程: PySide6 事件循环 + 所有 UI 更新
 - tick 线程: PresenceDetector.tick() → timer.tick() → UI 投递
-- PresenceDetector 内聚 pynput 监听 + 摄像头检测 + 休眠超时逻辑
+- PresenceDetector 内聚 pynput 监听 + 摄像头检测 + 休眠超时逻辑，位于 `detectors/` 包
 - tick 线程回调通过 `_CallbackSignal.post(fn)` 投递到主线程
 - **禁止** `QTimer.singleShot` 从非主线程调用（回调不会执行）
 - 所有 UI 更新必须在 Qt 主线程
+- 退出/重启时旧 tick 线程与检测器**后台回收**（_reap_worker），不得在主线程同步 join
+- 摄像头检测不持锁：tick() 三阶段（锁内判定 → 锁外检测 → 锁内应用），
+  摄像头打开失败按 30→60→120s 指数退避，避免被占用时反复阻塞
+- cv2 / mediapipe / 人脸模型**懒加载**（首次使用才 import），新代码不得在模块顶层引入重库
+- 版本号唯一来源是 `config.VERSION`，发布与打包均从它读取
 
 ## 关键依赖与资源
 
 - `blaze_face_short_range.tflite` — MediaPipe 人脸模型，必须在项目根目录
-- PySide6 — 不在 requirements.txt，需手动安装
+- 依赖统一在 requirements.txt（PySide6 / pynput / opencv-python / mediapipe / pytest）
 - 摄像头使用 DSHOW 后端，320×240 分辨率，5秒检测间隔
 
 ## 测试
 
-部分测试（test_overlay.py、test_detectors.py、test_tray_state.py）需要 cv2/PySide6。环境未安装时只跑：
-```bash
-pytest tests/test_timer.py tests/test_config.py -v
-```
+全部依赖都在 requirements.txt 中，`pytest tests/ -v` 可直接全量跑（当前 69 个测试）。
 
 UI 测试用 `__new__()` 绕过 `__init__`，手动注入 mock：
 ```python
@@ -46,8 +48,10 @@ overlay._ring = MagicMock()
 
 - 提交前必须先向用户确认
 - `GetUp.spec` 在版本控制中，其余 `.spec` 文件被忽略
-- `config.json`、`blaze_face_short_range.tflite`、`dist/`、`build/` 均被 gitignore
+- `config.json`、`blaze_face_short_range.tflite`、`dist/`、`build/`、`build_v220/`、
+  `build_tmp_v220/`、`dist_v220/`、`前端设计/` 均被 gitignore
 - GitHub Release 使用 `tag_name=vX.Y.Z` 格式
+- 发布前核对构建产物 mtime 晚于 tag 提交时间，避免发出内容过期的包
 
 ## 开发原则
 
