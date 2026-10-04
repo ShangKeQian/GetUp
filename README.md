@@ -63,7 +63,7 @@ python build.py
 
 ## 工作原理
 
-在位检测由 `PresenceDetector` 模块内聚处理（pynput 输入监听 + 摄像头人脸检测 + 节流 + 休眠超时），对外暴露 `tick()` 接口：
+在位检测由 `PresenceDetector` 模块内聚处理（键鼠空闲轮询 + 摄像头人脸检测 + 节流 + 休眠超时），对外暴露 `tick()` 接口：
 
 ```
 PresenceDetector.tick() → bool（是否有人）
@@ -98,7 +98,7 @@ GetUp/
 ├── camera_utils.py      # 摄像头枚举工具
 ├── detectors/
 │   ├── camera.py        # 摄像头人脸检测（MediaPipe）
-│   └── presence.py      # 在位检测融合（pynput + camera + 休眠）
+│   └── presence.py      # 在位检测融合（键鼠空闲 + camera + 休眠）
 ├── tests/               # 单元测试
 ├── build.py             # PyInstaller 打包脚本
 ├── requirements.txt     # Python 依赖
@@ -114,7 +114,6 @@ pytest tests/
 ## 技术栈
 
 - **PySide6** — GUI 框架
-- **pynput** — 全局键盘/鼠标监听
 - **OpenCV** — 摄像头捕获
 - **MediaPipe** — 人脸检测（BlazeFace 模型）
 - **PyInstaller** — 打包分发

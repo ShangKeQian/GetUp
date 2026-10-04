@@ -51,7 +51,7 @@ GetUp/
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                     tick 线程 (1Hz)                      │
-│  pynput 键鼠监听 → idle_time                            │
+│  GetLastInputInfo → idle_time                           │
 │  CameraDetector.check_once() → face_detected            │
 │         ↓                                               │
 │  TimerEngine.tick() / on_person_detected() / absent()   │
@@ -76,7 +76,7 @@ GetUp/
 | 线程 | 职责 | 运行方式 |
 |------|------|----------|
 | **主线程** | PySide6 事件循环、所有 UI 更新、窗口管理 | `QApplication.exec()` |
-| **tick 线程** | pynput 键鼠监听、摄像头检测、`TimerEngine.tick()` | `threading.Thread(daemon=True)` |
+| **tick 线程** | 键鼠空闲轮询、摄像头检测、`TimerEngine.tick()` | `threading.Thread(daemon=True)` |
 
 ### 跨线程通信：`_CallbackSignal`
 
@@ -516,7 +516,7 @@ python build.py
 - **捆绑资源：**
   - `blaze_face_short_range.tflite` — MediaPipe 人脸检测模型
   - MediaPipe 原生库（`libmediapipe.dll`、`modules/`、`metadata/`）
-- **隐藏导入：** `pynput.keyboard._win32`、`pynput.mouse._win32`、`mediapipe.*`
+- **隐藏导入：** `cv2`、`mediapipe.*`
 
 ### 注意事项
 

@@ -67,9 +67,10 @@ TimerEngine 的回调（on_show_overlay、on_update_work_time 等）在 tick 线
 
 **在位检测（detectors/presence.py — PresenceDetector）：**
 
-- 内聚 pynput 键盘/鼠标监听 + CameraDetector + 5 秒节流 + 休眠超时
+- 内聚键鼠空闲轮询 + CameraDetector + 5 秒节流 + 休眠超时
 - `tick() -> bool`：一次检测周期，内部持有 `threading.Lock` 与 `wake()` 互斥
-- `start()` 在 tick 线程启动 pynput 监听器；`close()` 幂等释放（`_closed` 守卫）
+- 空闲时长由模块级 `get_idle_seconds()` 提供（Win32 `GetLastInputInfo` 轮询，无键盘钩子）；
+  无监听器可启停，`close()` 幂等释放摄像头（`_closed` 守卫）
 
 **配置（config.py）：**
 
@@ -98,7 +99,6 @@ TimerEngine 的回调（on_show_overlay、on_update_work_time 等）在 tick 线
 **关键依赖：**
 
 - PySide6 - GUI 框架（主窗口、遮罩、系统托盘）
-- pynput - 全局键盘/鼠标监听
 - opencv-python - 摄像头捕获（使用 DSHOW 后端加速）
 - mediapipe - 人脸检测（blaze_face_short_range.tflite 模型文件需在项目根目录）
 
