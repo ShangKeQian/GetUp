@@ -1,9 +1,26 @@
 import os
+import sys
 import threading
+import types
 from typing import Optional
 
 
 _heavy_loaded = False
+
+
+def _install_matplotlib_stub():
+    """用空 stub 顶替 matplotlib，避免被打包进来的真 matplotlib 产生副作用。
+
+    mediapipe.tasks.python.vision 会急切 import drawing_utils，后者模块级
+    ``import matplotlib.pyplot``。GetUp 只做脸检测、从不调用任何绘图函数，但
+    真实 matplotlib 一旦被打包，每次启动都会在临时/回退目录重建字体缓存
+    （fontlist-*.json），并在进程被强杀时留下杂目录。空 stub 即可满足导入链。
+    """
+    if sys.modules.get("matplotlib") is None:
+        mpl = types.ModuleType("matplotlib")
+        mpl.pyplot = types.ModuleType("matplotlib.pyplot")
+        sys.modules["matplotlib"] = mpl
+        sys.modules["matplotlib.pyplot"] = mpl.pyplot
 
 
 def _ensure_heavy_loaded():
@@ -17,6 +34,7 @@ def _ensure_heavy_loaded():
     if _heavy_loaded:
         return
     import cv2
+    _install_matplotlib_stub()
     import mediapipe as mp
     from mediapipe.tasks import python
     from mediapipe.tasks.python import vision

@@ -28,6 +28,10 @@ def main():
         "--hidden-import", "mediapipe.tasks",
         "--hidden-import", "mediapipe.tasks.python",
         "--hidden-import", "mediapipe.tasks.python.vision",
+        # GetUp 只做脸检测，从不调用 mediapipe 的绘图函数；matplotlib 仅被
+        # drawing_utils 间接引用。排除真实 matplotlib（detectors/camera.py 用空 stub
+        # 顶替），省体积、省启动时间，也避免其字体缓存产生临时目录。
+        "--exclude-module", "matplotlib",
         "main.py",
     ]
 
