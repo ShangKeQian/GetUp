@@ -1,6 +1,6 @@
 """回归测试：P2 主线程不再同步 join（消除 UI 冻结）与 Q1 _wake_from_sleep 安全性。
 
-这些测试需要完整依赖（PySide6/cv2/mediapipe/pynput），与 test_deadlock_fix.py 同级。
+这些测试需要完整依赖（PySide6/cv2/mediapipe），与 test_deadlock_fix.py 同级。
 运行：pytest tests/test_reap_and_wake.py -v
 """
 import threading

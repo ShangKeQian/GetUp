@@ -1,9 +1,10 @@
+import os
 import sys
 import time
 import threading
 import traceback
 from collections import deque
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 from PySide6.QtCore import Qt, QObject, Signal, Slot
 from config import Config
 from timer import TimerEngine, State as TimerState
@@ -83,6 +84,7 @@ class GetUpApp:
             on_manual_break=self._manual_break,
         )
         self._tray.show()
+        self._check_tray()
 
         self._tick_thread = None
         self._lock = threading.Lock()
@@ -90,6 +92,28 @@ class GetUpApp:
         self._tick_generation = 0
         self._last_presence = None
         self._last_sleeping = False
+
+    def _check_tray(self):
+        """托盘可用性自检：未注册成功时留痕，便于定位"进程在、托盘无图标"。
+
+        窗口模式（console=False）下 stderr 无处可去，故同时写入配置文件同目录的
+        getup.log。正常启动不产生任何输出。
+        """
+        available = QSystemTrayIcon.isSystemTrayAvailable()
+        visible = self._tray.isVisible()
+        if available and visible:
+            return
+        message = (
+            f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 托盘图标未注册 "
+            f"(systemTrayAvailable={available}, visible={visible})\n"
+        )
+        print(message, end="", file=sys.stderr)
+        try:
+            with open(os.path.join(os.path.dirname(self._config.path), "getup.log"),
+                      "a", encoding="utf-8") as f:
+                f.write(message)
+        except OSError:
+            pass
 
     def _toggle_detection(self):
         """暂停/恢复监控。
@@ -149,7 +173,6 @@ class GetUpApp:
         with self._lock:
             detector = self._detector
             timer = self._timer
-        detector.start()
 
         try:
             while True:

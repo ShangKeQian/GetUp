@@ -87,6 +87,11 @@ class Config:
                                 continue
                         self._data[key] = val
 
+    @property
+    def path(self) -> str:
+        """配置文件路径（日志等需要与配置同目录时使用）。"""
+        return self._path
+
     def __getattr__(self, name: str):
         if name.startswith("_"):
             return super().__getattribute__(name)

@@ -1,17 +1,23 @@
 """回归测试：P1 PresenceDetector.tick() 摄像头检测移出锁 + 失败指数退避。
 
 需要 detectors.camera 的依赖（cv2/mediapipe），但通过 patch CameraDetector
-避免真实模型加载与摄像头硬件。
+避免真实模型加载与摄像头硬件；键鼠空闲时长通过 patch get_idle_seconds 注入，
+使判定不依赖运行测试的机器的真实空闲状态。
 """
 import threading
 import time
 from unittest.mock import MagicMock, patch
 
-from detectors.presence import PresenceDetector
+from detectors.presence import PresenceDetector, get_idle_seconds
 
 
-def _make_detector():
-    """构造 PresenceDetector，注入 mock 摄像头，不加载真实模型/不启监听器。"""
+def _make_detector(monkeypatch, idle=0.0):
+    """构造 PresenceDetector，注入 mock 摄像头与固定的键鼠空闲时长。
+
+    idle 可传数值或返回数值的可调用对象（后者用于让空闲时长在多次 tick 间变化）。
+    """
+    provider = idle if callable(idle) else (lambda: float(idle))
+    monkeypatch.setattr("detectors.presence.get_idle_seconds", provider)
     with patch("detectors.presence.CameraDetector"):
         d = PresenceDetector(camera_index=0, sleep_timeout_minutes=15)
     d._camera = MagicMock()
@@ -19,16 +25,26 @@ def _make_detector():
 
 
 def _force_camera_check(d):
-    """将检测器置于"键鼠空闲 + 摄像头空闲 + 到节流间隔"状态，强制下次 tick 调摄像头。"""
-    d._last_input_time = time.monotonic() - 10
+    """将检测器置于"摄像头空闲 + 到节流间隔"状态，强制下次 tick 调摄像头。
+
+    键鼠空闲时长由 _make_detector 的 idle 参数控制（需 >= 5 秒才算非近期输入）。
+    """
     d._last_camera_found_time = time.monotonic() - 10
     d._last_camera_check_time = 0.0
     d._camera_backoff_until = 0.0
 
 
+# ── 空闲时长来源（Win32 GetLastInputInfo）─────────────────────────
+def test_get_idle_seconds_returns_sane_value():
+    """ctypes 原型声明正确时，返回值应为非负有限浮点数（不因符号/截断而出错）。"""
+    value = get_idle_seconds()
+    assert isinstance(value, float)
+    assert 0.0 <= value < 365 * 24 * 3600
+
+
 # ── P1 核心：摄像头检测期间不持锁，wake() 可立即执行 ─────────────
-def test_tick_releases_lock_during_camera_check():
-    d = _make_detector()
+def test_tick_releases_lock_during_camera_check(monkeypatch):
+    d = _make_detector(monkeypatch, idle=10.0)
     _force_camera_check(d)
 
     in_check = threading.Event()
@@ -55,8 +71,8 @@ def test_tick_releases_lock_during_camera_check():
 
 
 # ── P1：摄像头错误后指数退避，不每 5s 重试 ───────────────────────
-def test_backoff_after_camera_error():
-    d = _make_detector()
+def test_backoff_after_camera_error(monkeypatch):
+    d = _make_detector(monkeypatch, idle=10.0)
     _force_camera_check(d)
     d._camera.check_once.return_value = None  # 摄像头错误/被占用
 
@@ -70,8 +86,8 @@ def test_backoff_after_camera_error():
     assert d._camera_backoff_until > 0
 
 
-def test_backoff_resets_on_success():
-    d = _make_detector()
+def test_backoff_resets_on_success(monkeypatch):
+    d = _make_detector(monkeypatch, idle=10.0)
     _force_camera_check(d)
     d._camera.check_once.return_value = None
     d.tick()  # 失败一次
@@ -87,41 +103,38 @@ def test_backoff_resets_on_success():
 
 
 # ── 行为保持：原有判定逻辑 ─────────────────────────────────────
-def test_recent_input_marks_present_without_camera():
-    d = _make_detector()
-    d._last_input_time = time.monotonic()  # idle < 5
+def test_recent_input_marks_present_without_camera(monkeypatch):
+    d = _make_detector(monkeypatch, idle=1.0)
     d._last_camera_found_time = 0.0
     assert d.tick() is True
     d._camera.check_once.assert_not_called()
 
 
-def test_recent_camera_match_marks_present_without_recheck():
-    d = _make_detector()
-    d._last_input_time = 0.0  # idle 很大
+def test_recent_camera_match_marks_present_without_recheck(monkeypatch):
+    d = _make_detector(monkeypatch, idle=100.0)
     d._last_camera_found_time = time.monotonic()  # camera_idle < 5
     assert d.tick() is True
     d._camera.check_once.assert_not_called()
 
 
-def test_camera_detects_face_marks_present():
-    d = _make_detector()
+def test_camera_detects_face_marks_present(monkeypatch):
+    d = _make_detector(monkeypatch, idle=10.0)
     _force_camera_check(d)
     d._camera.check_once.return_value = True
     assert d.tick() is True
 
 
-def test_camera_no_face_marks_absent():
-    d = _make_detector()
+def test_camera_no_face_marks_absent(monkeypatch):
+    d = _make_detector(monkeypatch, idle=10.0)
     _force_camera_check(d)
     d._camera.check_once.return_value = False
     assert d.tick() is False
 
 
-def test_enters_sleep_after_idle_timeout():
-    d = _make_detector()
+def test_enters_sleep_after_idle_timeout(monkeypatch):
+    d = _make_detector(monkeypatch, idle=100.0)
     d._camera.check_once.return_value = False
     d._sleep_timeout_seconds = 50
-    d._last_input_time = time.monotonic() - 100
     d._last_camera_found_time = 0.0
     d._last_camera_check_time = 0.0
     d._idle_start_time = time.monotonic() - 60  # 已空闲 60s >= 50
@@ -132,19 +145,19 @@ def test_enters_sleep_after_idle_timeout():
     d._camera.release.assert_called_once()
 
 
-def test_sleeping_returns_false_until_input():
-    d = _make_detector()
+def test_sleeping_returns_false_until_input(monkeypatch):
+    idle = [100.0]
+    d = _make_detector(monkeypatch, idle=lambda: idle[0])
     d._sleeping = True
-    d._last_input_time = 0.0  # 无输入
     assert d.tick() is False
     # 有输入后唤醒
-    d._last_input_time = time.monotonic()
+    idle[0] = 0.0
     assert d.tick() is True
     assert d.is_sleeping is False
 
 
-def test_closed_tick_returns_false_without_camera():
-    d = _make_detector()
+def test_closed_tick_returns_false_without_camera(monkeypatch):
+    d = _make_detector(monkeypatch, idle=10.0)
     _force_camera_check(d)
     d._closed = True
     assert d.tick() is False
