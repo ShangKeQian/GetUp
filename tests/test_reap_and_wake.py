@@ -130,7 +130,7 @@ def test_restart_detection_does_not_block_on_join():
     app._tick_thread = blocking
     old_detector = app._detector
     old_timer = app._timer
-    with patch("main.PresenceDetector"), patch("main.OverlayWindow"), \
+    with patch("main.PresenceDetector"), patch("main.OverlayManager"), \
          patch("main.TimerEngine"):
         finished, err = _run_with_timeout(app._restart_detection, timeout=1.0)
     assert finished, "_restart_detection 仍在主线程同步 join（UI 会冻结）"

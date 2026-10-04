@@ -13,6 +13,7 @@ pip install -r requirements.txt   # 安装依赖
 python main.py                    # 运行应用
 pytest tests/                     # 运行测试
 pytest tests/test_timer.py -v     # 运行单个测试
+python make_icon.py               # 重新生成 GetUp.ico（改了图标绘制后运行）
 python build.py                   # 打包为 exe (输出到 dist/GetUp/)
 ```
 

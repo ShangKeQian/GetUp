@@ -4,14 +4,13 @@ import threading
 import traceback
 from collections import deque
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt, QObject, Signal, Slot
 from config import Config
 from timer import TimerEngine, State as TimerState
 from detectors.presence import PresenceDetector
-from overlay import OverlayWindow
+from overlay import OverlayManager
 from main_window import MainWindow
-from tray import SystemTray, create_icon_pixmap
+from tray import SystemTray, create_app_icon
 
 
 class _CallbackSignal(QObject):
@@ -50,7 +49,7 @@ class GetUpApp:
     def __init__(self):
         self._app = QApplication(sys.argv)
         self._app.setQuitOnLastWindowClosed(False)
-        self._app.setWindowIcon(QIcon(create_icon_pixmap()))
+        self._app.setWindowIcon(create_app_icon())
         self._ui_cb = _CallbackSignal()
 
         self._config = Config()
@@ -63,7 +62,7 @@ class GetUpApp:
             sleep_timeout_minutes=self._config.sleep_timeout_minutes,
         )
 
-        self._overlay = OverlayWindow(
+        self._overlay = OverlayManager(
             break_minutes=self._config.break_minutes,
             on_close=self._on_overlay_close,
         )
@@ -273,7 +272,7 @@ class GetUpApp:
             )
             self._bind_timer_callbacks()
             self._tray.set_timer(self._timer)
-            self._overlay = OverlayWindow(
+            self._overlay = OverlayManager(
                 break_minutes=self._config.break_minutes,
                 on_close=self._on_overlay_close,
             )

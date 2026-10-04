@@ -37,7 +37,7 @@ def test_restart_detection_no_deadlock():
     app = _make_app(running=False)  # 不启动新线程，聚焦测试锁重入
 
     with patch("main.PresenceDetector"), \
-         patch("main.OverlayWindow"), \
+         patch("main.OverlayManager"), \
          patch("main.TimerEngine"):
         # 在子线程中调用，设超时检测死锁
         result = {"done": False, "error": None}

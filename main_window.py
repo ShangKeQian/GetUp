@@ -315,10 +315,10 @@ class MainWindow(QMainWindow):
         # ── 计时器 ──
         timer_card = self._create_section("计时器")
         self._work_spin = FluentSpinbox(5, 120, self._config.work_minutes, step=5)
-        self._add_setting_row(timer_card, "⏱", "#dcfce7", ACCENT,
+        self._add_setting_row(timer_card, "⏱", ACCENT_DIM, ACCENT,
                               "工作时长", "连续工作多久后提醒休息", "分钟", self._work_spin)
         self._break_spin = FluentSpinbox(1, 30, self._config.break_minutes)
-        self._add_setting_row(timer_card, "☕", "#dbeafe", "#3b82f6",
+        self._add_setting_row(timer_card, "☕", "#cffafe", "#06b6d4",
                               "休息时长", "每次休息的倒计时时长", "分钟", self._break_spin)
         scroll_layout.addWidget(timer_card)
 
@@ -367,7 +367,7 @@ class MainWindow(QMainWindow):
         # ── 系统 ──
         system_card = self._create_section("系统")
         self._startup_toggle = FluentToggle(self._config.startup_enabled)
-        self._add_setting_row(system_card, "💻", "#dcfce7", ACCENT,
+        self._add_setting_row(system_card, "💻", ACCENT_DIM, ACCENT,
                               "开机自启动", "通过 Windows 注册表设置开机自动启动", "", self._startup_toggle)
         scroll_layout.addWidget(system_card)
 

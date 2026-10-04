@@ -9,6 +9,7 @@ pip install -r requirements.txt   # 依赖已含 PySide6
 python main.py                    # 运行应用
 pytest tests/ -v                  # 运行所有测试
 pytest tests/test_timer.py -v     # 运行单个测试
+python make_icon.py               # 重新生成 GetUp.ico（改了图标绘制后运行）
 python build.py                   # 打包（输出 dist/GetUp/，--onedir 模式）
 ```
 

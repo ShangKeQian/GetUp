@@ -9,7 +9,7 @@ def fmt_mmss(seconds: int) -> str:
 
 # ── 状态 → (显示标签, 颜色) 映射 ─────────────────────────
 STATUS_MAP = {
-    "present": ("有人", "#22c55e"),
+    "present": ("有人", "#3b82f6"),
     "absent": ("无人", "#f59e0b"),
     "paused": ("暂停", "#6366f1"),
     "sleeping": ("休眠", "#6b7280"),
@@ -22,9 +22,9 @@ SURFACE = "#ffffff"
 FG = "#1a1d1b"
 MUTED = "#6b7280"
 BORDER = "#e5e7eb"
-ACCENT = "#22c55e"
-ACCENT_HOVER = "#16a34a"
-ACCENT_DIM = "#dcfce7"
+ACCENT = "#3b82f6"
+ACCENT_HOVER = "#2563eb"
+ACCENT_DIM = "#dbeafe"
 RADIUS = "10px"
 
 # ── 遮罩色板 ────────────────────────────────────────────
@@ -32,10 +32,10 @@ OVL_BG = "#0f172a"
 OVL_SURFACE = "#1e293b"
 OVL_FG = "#f1f5f9"
 OVL_MUTED = "#94a3b8"
-OVL_ACCENT = "#22c55e"
+OVL_ACCENT = "#3b82f6"
 
 # ── 状态色 ──────────────────────────────────────────────
-STATUS_PRESENT = "#22c55e"
+STATUS_PRESENT = "#3b82f6"
 STATUS_ABSENT = "#f59e0b"
 STATUS_PAUSED = "#6366f1"
 STATUS_SLEEPING = "#6b7280"
@@ -88,7 +88,7 @@ QPushButton#accent:hover {{
     background-color: {ACCENT_HOVER};
 }}
 QPushButton#accent:pressed {{
-    background-color: #15803d;
+    background-color: #1d4ed8;
 }}
 QPushButton#accent:disabled {{
     background-color: {BORDER};
