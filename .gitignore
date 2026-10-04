@@ -44,3 +44,6 @@ dist_v220/
 
 # WorkBuddy 本地工作记忆
 .workbuddy/
+
+# 临时对比用的旧版本产物副本
+_cmp/

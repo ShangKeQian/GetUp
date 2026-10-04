@@ -6,7 +6,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('blaze_face_short_range.tflite', '.'), ('C:\\Users\\ShangKeQian\\.workbuddy\\binaries\\python\\envs\\default\\Lib\\site-packages\\mediapipe/tasks/c/libmediapipe.dll', 'mediapipe/tasks/c/'), ('C:\\Users\\ShangKeQian\\.workbuddy\\binaries\\python\\envs\\default\\Lib\\site-packages\\mediapipe/modules', 'mediapipe/modules/'), ('C:\\Users\\ShangKeQian\\.workbuddy\\binaries\\python\\envs\\default\\Lib\\site-packages\\mediapipe/tasks/metadata', 'mediapipe/tasks/metadata/')],
-    hiddenimports=['pynput.keyboard._win32', 'pynput.mouse._win32', 'cv2', 'mediapipe', 'mediapipe.tasks', 'mediapipe.tasks.python', 'mediapipe.tasks.python.vision'],
+    hiddenimports=['cv2', 'mediapipe', 'mediapipe.tasks', 'mediapipe.tasks.python', 'mediapipe.tasks.python.vision'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -32,6 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    version='version_info.txt',
     icon=['GetUp.ico'],
 )
 coll = COLLECT(
