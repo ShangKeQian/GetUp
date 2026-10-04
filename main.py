@@ -1,3 +1,5 @@
+import os
+import shutil
 import sys
 import time
 import threading
@@ -5,12 +7,31 @@ import traceback
 from collections import deque
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt, QObject, Signal, Slot
-from config import Config
+from config import APP_NAME, Config
 from timer import TimerEngine, State as TimerState
 from detectors.presence import PresenceDetector
 from overlay import OverlayManager
 from main_window import MainWindow
 from tray import SystemTray, create_app_icon
+
+
+def _relocate_mpl_config():
+    """把 matplotlib 的配置目录固定到用户目录，避免每次启动都往 %TEMP% 里丢文件。
+
+    matplotlib 只是 mediapipe.tasks.python.vision.drawing_utils 的依赖（GetUp 用它
+    做脸检测，从不画检测框）。但打包后 PyInstaller 的 pyi_rth_mplconfig 钩子会在每次
+    启动时新建一个临时目录并把 MPLCONFIGDIR 指过去，于是每次启动都在 %TEMP% 留下
+    tmpXXXX/fontlist-*.json，而且每次都要重建字体缓存。固定到用户目录后只生成一次。
+    """
+    # 只有打包运行时钩子才会设置它；源码运行时留空，不动用户的 MPLCONFIGDIR
+    hook_dir = os.environ.get("MPLCONFIGDIR") if getattr(sys, "frozen", False) else None
+    target = os.path.join(
+        os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), APP_NAME, "matplotlib"
+    )
+    os.environ["MPLCONFIGDIR"] = target
+    if hook_dir and hook_dir != target:
+        # 钩子刚落下的临时目录（此后是空的）；它自己也注册了退出时清理，重复删无害
+        shutil.rmtree(hook_dir, ignore_errors=True)
 
 
 class _CallbackSignal(QObject):
@@ -327,6 +348,7 @@ class GetUpApp:
 
 
 def main():
+    _relocate_mpl_config()
     app = GetUpApp()
     sys.exit(app.run())
 
